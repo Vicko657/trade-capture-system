@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,18 +86,26 @@ class TradeServiceTest {
         verify(tradeRepository).save(any(Trade.class));
     }
 
+    /**
+     * Tests if Invalid Dates fail when a trade is created
+     */
     @Test
     void testCreateTrade_InvalidDates_ShouldFail() {
-        // Given - This test is intentionally failing for candidates to fix
+        // Given - The Trade Start Date 10/1/2025 is before the Trade Date 15/1/2025
+        // which is invalid
         tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 10)); // Before trade date
 
         // When & Then
+        // A runtime exception is thrown and assertThrows returns the
+        // exception
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             tradeService.createTrade(tradeDTO);
         });
 
-        // This assertion is intentionally wrong - candidates need to fix it
-        assertEquals("Wrong error message", exception.getMessage());
+        // Problem: This assertion is intentionally wrong - candidates need to fix it
+        // Fixed: Changed "Wrong error message" to "Start date cannot be before trade
+        // date" which matches the error message in validateTradeCreation() method
+        assertEquals("Start date cannot be before trade date", exception.getMessage());
     }
 
     @Test
@@ -141,7 +150,8 @@ class TradeServiceTest {
     void testAmendTrade_Success() {
         // Given
         when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
-        when(tradeStatusRepository.findByTradeStatus("AMENDED")).thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
+        when(tradeStatusRepository.findByTradeStatus("AMENDED"))
+                .thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
         // When
