@@ -212,16 +212,22 @@ public class TradeControllerTest {
         verify(tradeService, never()).saveTrade(any(Trade.class), any(TradeDTO.class));
     }
 
+    /**
+     * Tests expected response code when a trade has been deleted
+     */
     @Test
     void testDeleteTrade() throws Exception {
         // Given
         doNothing().when(tradeService).deleteTrade(1001L);
 
         // When/Then
+        // set up a DELETE request to a test endpoint
         mockMvc.perform(delete("/api/trades/1001")
+                // expect JSON to be returned
                 .contentType(MediaType.APPLICATION_JSON))
+                // expect response status 204 NO CONTENT REQUEST
                 .andExpect(status().isNoContent());
-
+        // Checks if trade has been deleted
         verify(tradeService).deleteTrade(1001L);
     }
 
