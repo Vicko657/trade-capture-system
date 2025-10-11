@@ -1,8 +1,12 @@
 package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.BookDTO;
+import com.technicalchallenge.mapper.BookMapper;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.repository.BookRepository;
+import com.technicalchallenge.repository.CostCenterRepository;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,14 +16,43 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class BookServiceTest {
     @Mock
     private BookRepository bookRepository;
+
+    @Mock
+    private CostCenterRepository costCenterRepository;
+
     @InjectMocks
     private BookService bookService;
+
+    @Mock
+    private BookMapper bookMapper;
+
+    private Book book;
+    private BookDTO bookDTO;
+
+    @BeforeEach
+    void setUp() {
+        // Set up test data
+
+        bookService = new BookService(bookRepository, costCenterRepository, bookMapper);
+
+        bookDTO = new BookDTO();
+        bookDTO.setId(1L);
+        bookDTO.setBookName("TestBookName");
+        bookDTO.setVersion(1);
+        bookDTO.setActive(true);
+        bookDTO.setCostCenterName(null);
+
+        book = new Book();
+        book.setId(1L);
+
+    }
 
     @Test
     void testFindBookById() {
@@ -52,10 +85,17 @@ public class BookServiceTest {
         verify(bookRepository, times(1)).deleteById(bookId);
     }
 
+    /**
+     * Tests for when a Book is not found by a non existant id and returns an empty
+     * set
+     */
     @Test
     void testFindBookByNonExistentId() {
+        // Given - Set the bookId and mock repository
         when(bookRepository.findById(99L)).thenReturn(Optional.empty());
+        // When - Queries if the 99L exists
         Optional<BookDTO> found = bookService.getBookById(99L);
+        // Then - Checks if the id is not present
         assertFalse(found.isPresent());
     }
 
