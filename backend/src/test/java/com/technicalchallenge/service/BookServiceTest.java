@@ -54,12 +54,20 @@ public class BookServiceTest {
 
     }
 
+    /**
+     * Tests for when a Book is found by id
+     */
     @Test
     void testFindBookById() {
-        Book book = new Book();
-        book.setId(1L);
+        // Given - Set the bookId and mock repository
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        // Added Stub - Mapper converts the book to a dto
+        when(bookMapper.toDto(book)).thenReturn(bookDTO);
+
+        // When - Queries if 1L exists
         Optional<BookDTO> found = bookService.getBookById(1L);
+
+        // Then - Checks if the id is present
         assertTrue(found.isPresent());
         assertEquals(1L, found.get().getId());
     }
