@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,17 +71,41 @@ public class BookServiceTest {
         assertEquals(1L, found.get().getId());
     }
 
+    /**
+     * Tests if a book saves successfully
+     */
     @Test
     void testSaveBook() {
-        Book book = new Book();
+        // Given - Set the bookId and mock service, repository and mapper
         book.setId(2L);
-        BookDTO bookDTO = new BookDTO();
         bookDTO.setId(2L);
-        when(bookRepository.save(any(Book.class))).thenReturn(book);
 
+        // Created a partial mock of bookService, to target the void
+        // populateReferenceDataByName
+        bookService = spy(bookService);
+
+        // Added stub - which allows the bookMapper to convert the dto (bookDTO) to a
+        // entity (book)
+        when(bookMapper.toEntity(bookDTO)).thenReturn(book);
+
+        // Added a void stub - which mocked the void internal method call
+        // populateReferenceDataByName
+        doNothing().when(bookService).populateReferenceDataByName(book, bookDTO);
+
+        // The book is then saved
+        when(bookRepository.save(book)).thenReturn(book);
+
+        // Added stubbing after, the bookMapper converts the entity (book) back to a dto
+        // (bookDTO)
+        when(bookMapper.toDto(book)).thenReturn(bookDTO);
+
+        // When - Queries the service layer if the book is saved
         BookDTO saved = bookService.saveBook(bookDTO);
-        assertNotNull(saved);
-        assertEquals(2L, saved.getId());
+
+        // Then - Checks if the book was saved
+        assertNotNull(saved); // Checks if the bookid is not null
+        assertEquals(2L, saved.getId()); // Checks that the expected and actual bookId match
+        verify(bookRepository).save(book);// Verifies if the book was saved
     }
 
     @Test
