@@ -2,9 +2,15 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.mapper.TradeMapper;
+import com.technicalchallenge.model.Book;
+import com.technicalchallenge.model.Counterparty;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
+import com.technicalchallenge.model.TradeStatus;
+import com.technicalchallenge.repository.BookRepository;
 import com.technicalchallenge.repository.CashflowRepository;
+import com.technicalchallenge.repository.CounterpartyRepository;
 import com.technicalchallenge.repository.TradeLegRepository;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.repository.TradeStatusRepository;
@@ -42,47 +48,113 @@ class TradeServiceTest {
     @Mock
     private AdditionalInfoService additionalInfoService;
 
+    @Mock
+    private BookRepository bookRepository;
+
+    @Mock
+    private CounterpartyRepository counterpartyRepository;
+
     @InjectMocks
     private TradeService tradeService;
 
     private TradeDTO tradeDTO;
     private Trade trade;
+    private Book book;
+    private Counterparty counterparty;
+    private TradeStatus tradeStatus;
+    private TradeLegDTO leg1;
+    private TradeLegDTO leg2;
+    private TradeLeg tradeLeg;
 
     @BeforeEach
     void setUp() {
         // Set up test data
+
+        // TradeDTO - DTO
         tradeDTO = new TradeDTO();
         tradeDTO.setTradeId(100001L);
         tradeDTO.setTradeDate(LocalDate.of(2025, 1, 15));
         tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
         tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
 
-        TradeLegDTO leg1 = new TradeLegDTO();
+        // Trade Leg Reference
+        tradeLeg = new TradeLeg();
+
+        leg1 = new TradeLegDTO();
         leg1.setNotional(BigDecimal.valueOf(1000000));
         leg1.setRate(0.05);
 
-        TradeLegDTO leg2 = new TradeLegDTO();
+        leg2 = new TradeLegDTO();
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.0);
 
         tradeDTO.setTradeLegs(Arrays.asList(leg1, leg2));
 
+        // Book Reference
+        book = new Book();
+        book.setId(5L);
+        book.setBookName("TestBookC");
+
+        tradeDTO.setBookId(book.getId());
+        tradeDTO.setBookName(book.getBookName());
+
+        // Counterparty Reference
+        counterparty = new Counterparty();
+        counterparty.setId(7L);
+        counterparty.setName("TestCounterpartyC");
+
+        tradeDTO.setCounterpartyId(counterparty.getId());
+        tradeDTO.setCounterpartyName(counterparty.getName());
+
+        // Trade Status Reference
+        tradeStatus = new TradeStatus();
+        tradeStatus.setId(9L);
+        tradeStatus.setTradeStatus("NEW");
+
+        tradeDTO.setTradeStatusId(tradeStatus.getId());
+        tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
+
+        // Trade - Entity
         trade = new Trade();
         trade.setId(1L);
         trade.setTradeId(100001L);
+        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade.setBook(book);
+        trade.setCounterparty(counterparty);
+        trade.setTradeStatus(tradeStatus);
     }
 
+    /**
+     * Tests if creating a trade is successful
+     */
     @Test
     void testCreateTrade_Success() {
-        // Given
+
+        // Given - Set the new tradeDTO, new trade and data in the setUp() method
+
+        // Problem: RuntimeException error was thrown, "Book not found or not set"
+        // Fixed: Added stubbing statements to populate reference data and validate the
+        // data
+        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
+        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
+        when(tradeStatusRepository.findByTradeStatus("NEW")).thenReturn(Optional.of(tradeStatus));
+
+        // Mocked saving a new trade
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
-        // When
+        // Problem: NullPointerException was thrown, get.tradeLegid() was null
+        // Fixed: Mocked saving a new trade leg entity
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeLeg);
+
+        // When - Checks that the trade has been created
+        tradeService.populateReferenceDataByName(trade, tradeDTO);
         Trade result = tradeService.createTrade(tradeDTO);
 
-        // Then
+        // Then - Verifies that the results are not null and the trade has been saved
         assertNotNull(result);
         assertEquals(100001L, result.getTradeId());
+        assertEquals("TestBookC", result.getBook().getBookName());
+        assertEquals(LocalDate.of(2025, 1, 17), result.getTradeStartDate());
         verify(tradeRepository).save(any(Trade.class));
     }
 
