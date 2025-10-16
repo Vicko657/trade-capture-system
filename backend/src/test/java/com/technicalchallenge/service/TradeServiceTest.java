@@ -2,7 +2,6 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Counterparty;
 import com.technicalchallenge.model.Trade;
@@ -23,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -73,6 +73,7 @@ class TradeServiceTest {
         // TradeDTO - DTO
         tradeDTO = new TradeDTO();
         tradeDTO.setTradeId(100001L);
+        tradeDTO.setVersion(1);
         tradeDTO.setTradeDate(LocalDate.of(2025, 1, 15));
         tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
         tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
@@ -119,9 +120,11 @@ class TradeServiceTest {
         trade.setId(1L);
         trade.setTradeId(100001L);
         trade.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
         trade.setBook(book);
         trade.setCounterparty(counterparty);
         trade.setTradeStatus(tradeStatus);
+        trade.setVersion(1);
     }
 
     /**
@@ -131,13 +134,14 @@ class TradeServiceTest {
     void testCreateTrade_Success() {
 
         // Given - Set the new tradeDTO, new trade and data in the setUp() method
-
+        // tradeStatus.setTradeStatus("NEW");
         // Problem: RuntimeException error was thrown, "Book not found or not set"
         // Fixed: Added stubbing statements to populate reference data and validate the
         // data
         when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
         when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
-        when(tradeStatusRepository.findByTradeStatus("NEW")).thenReturn(Optional.of(tradeStatus));
+        when(tradeStatusRepository.findByTradeStatus("NEW"))
+                .thenReturn(Optional.of(tradeStatus));
 
         // Mocked saving a new trade
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
@@ -218,19 +222,53 @@ class TradeServiceTest {
         assertFalse(result.isPresent());
     }
 
+    /**
+     * Tests if amending a trade is successful
+     */
     @Test
     void testAmendTrade_Success() {
-        // Given
+        // Given - Finds existing trade id
+        // Finds and disables existing trade with 100001L
         when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
-        when(tradeStatusRepository.findByTradeStatus("AMENDED"))
-                .thenReturn(Optional.of(new com.technicalchallenge.model.TradeStatus()));
-        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
+        trade.setActive(false);
+        trade.setDeactivatedDate(LocalDateTime.now());
 
-        // When
+        // New trade is created with the same Id as the existing trade
+        Trade amendedTrade = new Trade();
+        amendedTrade.setTradeId(100001L);
+        // Problem: NullPointerException was thrown, trade.getVersion() was null
+        // Fixed: Set existing trade version to 1 and set the amended trade version to
+        amendedTrade.setVersion(trade.getVersion() + 1);
+
+        // Creates a new trade status and sets to amended trade
+        TradeStatus amendedStatus = new TradeStatus();
+        amendedStatus.setTradeStatus("AMENDED");
+        amendedTrade.setTradeStatus(amendedStatus);
+        tradeDTO.setTradeStatus(amendedStatus.getTradeStatus());
+        when(tradeStatusRepository.findByTradeStatus("AMENDED"))
+                .thenReturn(Optional.of(amendedStatus));
+
+        // Changed the trades maturity date to check if the trade has been amended
+        amendedTrade.setTradeMaturityDate(LocalDate.of(2026, 5, 30));
+        tradeDTO.setTradeMaturityDate(amendedTrade.getTradeMaturityDate());
+
+        // Mocked saving a new and old trade
+        when(tradeRepository.save(any(Trade.class))).thenReturn(amendedTrade);
+
+        // Problem: NullPointerException was thrown, get.tradeLegid() was null
+        // Fixed: Mocked saving a new trade leg entity
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeLeg);
+
+        // When - Checks if the trade has been amended
         Trade result = tradeService.amendTrade(100001L, tradeDTO);
 
-        // Then
-        assertNotNull(result);
+        // Then - Verifies the trade has been amended
+        assertNotNull(result); // Amended trade is not null
+        assertEquals(false, trade.getActive()); // Trade is not active
+        assertEquals(100001L, result.getTradeId()); // Amended trade has the same Id as the existing trade Id
+        assertEquals(LocalDate.of(2026, 5, 30), result.getTradeMaturityDate()); // The maturity date has changed
+        assertEquals(2, result.getVersion()); // Amended trade version is now 2
+        assertEquals(true, result.getActive()); // Amended trade is active
         verify(tradeRepository, times(2)).save(any(Trade.class)); // Save old and new
     }
 
