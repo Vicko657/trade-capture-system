@@ -78,6 +78,12 @@ public class TradeController {
         try {
             Trade trade = tradeMapper.toEntity(tradeDTO);
             tradeService.populateReferenceDataByName(trade, tradeDTO);
+
+            // Validation for a missing Book or Counterparty
+            if (tradeDTO.getBookName() == null || tradeDTO.getCounterpartyName() == null) {
+                return ResponseEntity.badRequest().body("Book and Counterparty are required");
+            }
+
             Trade savedTrade = tradeService.saveTrade(trade, tradeDTO);
             TradeDTO responseDTO = tradeMapper.toDto(savedTrade);
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
