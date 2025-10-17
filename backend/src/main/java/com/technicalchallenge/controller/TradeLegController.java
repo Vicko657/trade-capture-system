@@ -49,9 +49,6 @@ public class TradeLegController {
     public ResponseEntity<?> createTradeLeg(@Valid @RequestBody TradeLegDTO tradeLegDTO) {
         logger.info("Creating new trade leg: {}", tradeLegDTO);
         // Validation: notional > 0, trade, currency, legRateType required
-        if (tradeLegDTO.getNotional() == null || tradeLegDTO.getNotional().signum() <= 0) {
-            return ResponseEntity.badRequest().body("Notional must be positive");
-        }
         if (tradeLegDTO.getCurrency() == null || tradeLegDTO.getLegType() == null) {
             return ResponseEntity.badRequest().body("Currency and Leg Rate Type are required");
         }

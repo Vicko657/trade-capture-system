@@ -20,6 +20,11 @@ public class GlobalExceptionHandler {
         if (tradeDateError != null) {
             return tradeDateError.getDefaultMessage();
         }
+        // Targets notional validation error
+        FieldError notionalError = e.getBindingResult().getFieldError("notional");
+        if (notionalError != null) {
+            return notionalError.getDefaultMessage();
+        }
 
         return "Validation has failed";
     }
