@@ -196,6 +196,9 @@ public class TradeControllerTest {
         verify(tradeService).saveTrade(any(Trade.class), any(TradeDTO.class));
     }
 
+    /**
+     * Tests expected response code when a tradeId isn't matching the path Id
+     */
     @Test
     void testUpdateTradeIdMismatch() throws Exception {
         // Given
@@ -203,13 +206,17 @@ public class TradeControllerTest {
         tradeDTO.setTradeId(2002L); // Different from path ID
 
         // When/Then
+        // set up a PUT request to a test endpoint - endpoint changed to
         mockMvc.perform(put("/api/trades/{id}", pathId)
+                // expect JSON to be returned
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tradeDTO)))
+                // expect response status 400 BAD REQUEST
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Trade ID in path must match Trade ID in request body"));
-
-        verify(tradeService, never()).saveTrade(any(Trade.class), any(TradeDTO.class));
+                .andExpect(content().string(
+                        "Trade ID in path must match Trade ID in request body"));
+        // Verifies that amendTrade was never called in the test
+        verify(tradeService, never()).amendTrade(pathId, tradeDTO);
     }
 
     /**
