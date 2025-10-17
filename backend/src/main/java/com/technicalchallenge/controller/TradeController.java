@@ -78,6 +78,12 @@ public class TradeController {
         try {
             Trade trade = tradeMapper.toEntity(tradeDTO);
             tradeService.populateReferenceDataByName(trade, tradeDTO);
+
+            // Validation for a missing Book or Counterparty
+            if (tradeDTO.getBookName() == null || tradeDTO.getCounterpartyName() == null) {
+                return ResponseEntity.badRequest().body("Book and Counterparty are required");
+            }
+
             Trade savedTrade = tradeService.saveTrade(trade, tradeDTO);
             TradeDTO responseDTO = tradeMapper.toDto(savedTrade);
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -100,7 +106,12 @@ public class TradeController {
             @Parameter(description = "Updated trade details", required = true) @Valid @RequestBody TradeDTO tradeDTO) {
         logger.info("Updating trade with id: {}", id);
         try {
-            tradeDTO.setTradeId(id); // Ensure the ID matches
+            // Fixed: Ensure the ID matches - If statement to validate if tradeId and id are
+            // not equal
+            if (!(tradeDTO.getTradeId()).equals(id)) {
+                return ResponseEntity.badRequest().body("Trade ID in path must match Trade ID in request body");
+            }
+
             Trade amendedTrade = tradeService.amendTrade(id, tradeDTO);
             TradeDTO responseDTO = tradeMapper.toDto(amendedTrade);
             return ResponseEntity.ok(responseDTO);

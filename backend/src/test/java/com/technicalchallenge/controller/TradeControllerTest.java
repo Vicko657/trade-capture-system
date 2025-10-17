@@ -51,8 +51,10 @@ public class TradeControllerTest {
 
         // Create a sample TradeDTO for testing
         tradeDTO = new TradeDTO();
+        tradeDTO.setId(1L);
         tradeDTO.setTradeId(1001L);
         tradeDTO.setVersion(1);
+        tradeDTO.setActive(true);
         tradeDTO.setTradeDate(LocalDate.now()); // Fixed: LocalDate instead of LocalDateTime
         tradeDTO.setTradeStartDate(LocalDate.now().plusDays(2)); // Fixed: correct method name
         tradeDTO.setTradeMaturityDate(LocalDate.now().plusYears(5)); // Fixed: correct method name
@@ -178,24 +180,36 @@ public class TradeControllerTest {
         verify(tradeService, never()).saveTrade(any(Trade.class), any(TradeDTO.class));
     }
 
+    /**
+     * Tests that a trade can be amended
+     */
     @Test
     void testUpdateTrade() throws Exception {
         // Given
         Long tradeId = 1001L;
         tradeDTO.setTradeId(tradeId);
-        when(tradeService.saveTrade(any(Trade.class), any(TradeDTO.class))).thenReturn(trade);
-        doNothing().when(tradeService).populateReferenceDataByName(any(Trade.class), any(TradeDTO.class));
+        when(tradeService.amendTrade(eq(tradeId), any(TradeDTO.class))).thenReturn(trade); // Mocked amendTrade stubbing
+                                                                                           // statement
+        when(tradeMapper.toDto(any(Trade.class))).thenReturn(tradeDTO); // Mocked toDTO trade mapper
 
         // When/Then
+        // set up a PUT request to a test endpoint
         mockMvc.perform(put("/api/trades/{id}", tradeId)
+                // expect JSON to be returned
                 .contentType(MediaType.APPLICATION_JSON)
+                // expect Mapper used to return tradeDTO
                 .content(objectMapper.writeValueAsString(tradeDTO)))
+                // expect response status 200 OK REQUEST
                 .andExpect(status().isOk())
+                // expect json path tradeId = 1001
                 .andExpect(jsonPath("$.tradeId", is(1001)));
-
-        verify(tradeService).saveTrade(any(Trade.class), any(TradeDTO.class));
+        // Checks if amendTrade mock had happened
+        verify(tradeService).amendTrade(eq(tradeId), any(TradeDTO.class));
     }
 
+    /**
+     * Tests expected response code when a tradeId isn't matching the path Id
+     */
     @Test
     void testUpdateTradeIdMismatch() throws Exception {
         // Given
@@ -203,13 +217,17 @@ public class TradeControllerTest {
         tradeDTO.setTradeId(2002L); // Different from path ID
 
         // When/Then
+        // set up a PUT request to a test endpoint - endpoint changed to
         mockMvc.perform(put("/api/trades/{id}", pathId)
+                // expect JSON to be returned
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tradeDTO)))
+                // expect response status 400 BAD REQUEST
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Trade ID in path must match Trade ID in request body"));
-
-        verify(tradeService, never()).saveTrade(any(Trade.class), any(TradeDTO.class));
+                .andExpect(content().string(
+                        "Trade ID in path must match Trade ID in request body"));
+        // Verifies that amendTrade was never called in the test
+        verify(tradeService, never()).amendTrade(pathId, tradeDTO);
     }
 
     /**
