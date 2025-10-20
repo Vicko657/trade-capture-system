@@ -3,13 +3,19 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.Book;
+import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.Counterparty;
+import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.model.TradeStatus;
 import com.technicalchallenge.repository.BookRepository;
+import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import com.technicalchallenge.repository.CashflowRepository;
 import com.technicalchallenge.repository.CounterpartyRepository;
+import com.technicalchallenge.repository.LegTypeRepository;
+import com.technicalchallenge.repository.PayRecRepository;
+import com.technicalchallenge.repository.ScheduleRepository;
 import com.technicalchallenge.repository.TradeLegRepository;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.repository.TradeStatusRepository;
@@ -23,7 +29,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,7 +51,19 @@ class TradeServiceTest {
     private CashflowRepository cashflowRepository;
 
     @Mock
+    private ScheduleRepository scheduleRepository;
+
+    @Mock
     private TradeStatusRepository tradeStatusRepository;
+
+    @Mock
+    private LegTypeRepository legTypeRepository;
+
+    @Mock
+    private PayRecRepository payRecRepository;
+
+    @Mock
+    private BusinessDayConventionRepository businessDayConventionRepository;
 
     @Mock
     private AdditionalInfoService additionalInfoService;
@@ -62,9 +82,16 @@ class TradeServiceTest {
     private Book book;
     private Counterparty counterparty;
     private TradeStatus tradeStatus;
+    private TradeLeg tradeLeg;
+    private TradeLeg tradeleg1;
+    private TradeLeg tradeleg2;
     private TradeLegDTO leg1;
     private TradeLegDTO leg2;
-    private TradeLeg tradeLeg;
+    private List<Cashflow> cashflowList1;
+    private List<Cashflow> cashflowList2;
+    private Cashflow cashflow1;
+    private Cashflow cashflow2;
+    private Schedule schedule;
 
     @BeforeEach
     void setUp() {
@@ -78,18 +105,16 @@ class TradeServiceTest {
         tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
         tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
 
-        // Trade Leg Reference
-        tradeLeg = new TradeLeg();
-
-        leg1 = new TradeLegDTO();
-        leg1.setNotional(BigDecimal.valueOf(1000000));
-        leg1.setRate(0.05);
-
-        leg2 = new TradeLegDTO();
-        leg2.setNotional(BigDecimal.valueOf(1000000));
-        leg2.setRate(0.0);
-
-        tradeDTO.setTradeLegs(Arrays.asList(leg1, leg2));
+        // Trade - Entity
+        trade = new Trade();
+        trade.setId(1L);
+        trade.setTradeId(100001L);
+        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade.setBook(book);
+        trade.setCounterparty(counterparty);
+        trade.setTradeStatus(tradeStatus);
+        trade.setVersion(1);
 
         // Book Reference
         book = new Book();
@@ -115,16 +140,62 @@ class TradeServiceTest {
         tradeDTO.setTradeStatusId(tradeStatus.getId());
         tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
 
-        // Trade - Entity
-        trade = new Trade();
-        trade.setId(1L);
-        trade.setTradeId(100001L);
-        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
-        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
-        trade.setBook(book);
-        trade.setCounterparty(counterparty);
-        trade.setTradeStatus(tradeStatus);
-        trade.setVersion(1);
+        // Schedule Reference
+        schedule = new Schedule();
+        schedule.setId(1L);
+        schedule.setSchedule("1M");
+
+        // Trade Leg Reference
+        tradeLeg = new TradeLeg();
+        tradeLeg.setLegId(5L);
+        tradeLeg.setNotional(BigDecimal.valueOf(1000000));
+        tradeLeg.setRate(0.05);
+        tradeLeg.setCalculationPeriodSchedule(schedule);
+
+        leg1 = new TradeLegDTO();
+        leg1.setLegId(3L);
+        leg1.setNotional(BigDecimal.valueOf(1000000));
+        leg1.setRate(0.05);
+        leg1.setCalculationPeriodSchedule("1M");
+
+        leg2 = new TradeLegDTO();
+        leg2.setLegId(4L);
+        leg2.setNotional(BigDecimal.valueOf(1000000));
+        leg2.setRate(0.05);
+        leg2.setCalculationPeriodSchedule("1M");
+
+        tradeleg1 = new TradeLeg();
+        tradeleg1.setLegId(1L);
+        tradeleg1.setNotional(BigDecimal.valueOf(1000000));
+        tradeleg1.setRate(0.05);
+        tradeleg1.setCalculationPeriodSchedule(schedule);
+
+        tradeleg2 = new TradeLeg();
+        tradeleg2.setLegId(2L);
+        tradeleg2.setNotional(BigDecimal.valueOf(1000000));
+        tradeleg2.setRate(0.05);
+        tradeleg2.setCalculationPeriodSchedule(schedule);
+
+        // Cashflow Reference
+
+        // Cashflow List
+        cashflowList1 = new ArrayList<Cashflow>();
+        cashflowList2 = new ArrayList<Cashflow>();
+
+        // Cashflow Entity
+        cashflow1 = new Cashflow();
+        cashflow2 = new Cashflow();
+
+        cashflow1.setTradeLeg(tradeleg1);
+        cashflow2.setTradeLeg(tradeleg2);
+
+        // Assigned TradeLegs and Cashflows
+        tradeleg1.setCashflows(cashflowList1);
+        tradeleg2.setCashflows(cashflowList2);
+
+        trade.setTradeLegs(List.of(tradeleg2, tradeleg2));
+        tradeDTO.setTradeLegs(List.of(leg1, leg2));
+
     }
 
     /**
@@ -285,19 +356,44 @@ class TradeServiceTest {
         assertTrue(exception.getMessage().contains("Trade not found"));
     }
 
-    // This test has a deliberate bug for candidates to find and fix
+    /**
+     * Tests the Cashflow Generation Monthly Schedule
+     */
     @Test
     void testCashflowGeneration_MonthlySchedule() {
-        // This test method is incomplete and has logical errors
-        // Candidates need to implement proper cashflow testing
 
-        // Given - setup is incomplete
-        TradeLeg leg = new TradeLeg();
-        leg.setNotional(BigDecimal.valueOf(1000000));
+        // Given - Setup the two entities for the tradeLegs and assigned seperate
+        // cashflow and cashflow lists in the setUp(). Added the schedule repository to
+        // define the months interval.
 
-        // When - method call is missing
+        // Mocked populating the book, counterparty and tradeStatus
+        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
+        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
+        when(tradeStatusRepository.findByTradeStatus("NEW"))
+                .thenReturn(Optional.of(tradeStatus));
 
-        // Then - assertions are wrong/missing
-        assertEquals(1, 12); // This will always fail - candidates need to fix
+        // Mocked saving a new trade
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
+
+        // Mocked saving the two different tradeLegs
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeleg1, tradeleg2);
+
+        // Mocked saving any cashflows and cashflow lists recieved
+        when(cashflowRepository.save(any(Cashflow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When - Checks if the trade has been created with the trade legs. The Trade
+        // leg model has been modified to create new ArrayList<Cashflow>(); and
+        // leg.getCashflows().add(cashflow); has been added to the for loop in the
+        // generateCashflows() method in the TradeService.class
+        Trade result = tradeService.createTrade(tradeDTO);
+
+        // Then - Assertions were replaced to verify the CashflowGeneration is working.
+        assertNotNull(result);// The trade is not null
+        assertEquals(2, result.getTradeLegs().size()); // Trade has two trade legs
+        assertEquals(12, tradeleg1.getCashflows().size()); // tradeleg1 has 12 cashflows
+        assertEquals(12, tradeleg2.getCashflows().size()); // tradeleg2 has 12 cashflows
+        verify(cashflowRepository, times(24)).save(any(Cashflow.class)); // The Cashflow Repository iterates 24 times.
+                                                                         // 12 cashflows for each tradeleg.
+
     }
 }

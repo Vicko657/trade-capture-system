@@ -3,6 +3,7 @@ package com.technicalchallenge.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -64,6 +65,7 @@ public class TradeLeg {
     private LocalDateTime createdDate;
     private LocalDateTime deactivatedDate;
 
+    // Fixed: Creates a new Arraylist of Cashflows each time
     @OneToMany(mappedBy = "tradeLeg", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Cashflow> cashflows;
+    private List<Cashflow> cashflows = new ArrayList<Cashflow>();
 }
