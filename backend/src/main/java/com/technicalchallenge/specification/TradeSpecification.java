@@ -106,7 +106,9 @@ public class TradeSpecification {
 
             // Combines each predicate into an array, they can be searched seperately or
             // together
-            return criteriaBuilder.and(predicates.toArray(predicates.toArray(new Predicate[0])));
+            // Fixed: Removed duplication of predicates.toArray which stopped narrowing the
+            // search.
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 
         };
     }

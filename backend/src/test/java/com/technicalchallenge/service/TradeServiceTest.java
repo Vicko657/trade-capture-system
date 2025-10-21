@@ -3,6 +3,7 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.Counterparty;
@@ -10,6 +11,7 @@ import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.model.TradeStatus;
+import com.technicalchallenge.repository.ApplicationUserRepository;
 import com.technicalchallenge.repository.BookRepository;
 import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import com.technicalchallenge.repository.CashflowRepository;
@@ -77,6 +79,9 @@ class TradeServiceTest {
     @Mock
     private CounterpartyRepository counterpartyRepository;
 
+    @Mock
+    private ApplicationUserRepository applicationUserRepository;
+
     @InjectMocks
     private TradeService tradeService;
 
@@ -84,6 +89,7 @@ class TradeServiceTest {
     private Trade trade;
     private Book book;
     private Counterparty counterparty;
+    private Counterparty counterparty2;
     private TradeStatus tradeStatus;
     private TradeLeg tradeLeg;
     private TradeLeg tradeleg1;
@@ -95,6 +101,8 @@ class TradeServiceTest {
     private Cashflow cashflow1;
     private Cashflow cashflow2;
     private Schedule schedule;
+    private ApplicationUser tradeUser1;
+    private ApplicationUser tradeUser2;
 
     @BeforeEach
     void setUp() {
@@ -118,6 +126,17 @@ class TradeServiceTest {
         trade.setCounterparty(counterparty);
         trade.setTradeStatus(tradeStatus);
         trade.setVersion(1);
+
+        // TraderUser Reference
+        tradeUser1 = new ApplicationUser();
+        tradeUser1.setId(1L);
+        tradeUser1.setFirstName("John");
+        tradeUser1.setLastName("Smith");
+
+        tradeUser2 = new ApplicationUser();
+        tradeUser2.setId(3L);
+        tradeUser2.setFirstName("Jess");
+        tradeUser2.setLastName("Abraham");
 
         // Book Reference
         book = new Book();
@@ -442,4 +461,62 @@ class TradeServiceTest {
         verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any());
 
     }
+
+    /**
+     * Tests if searching for trades by multiple criteria is successful
+     */
+    @Test
+    void testGetTradesByMultipleCriteria_Success() {
+        // Given - Mocked the searchTradeByCriteriaDTO and the repository and assigned
+        // the trades with a book, traderUser and counterparty.
+
+        // New Book
+        Book book2 = new Book();
+        book2.setBookName("TestBookA");
+
+        // New Counterparty
+        Counterparty counterparty2 = new Counterparty();
+        counterparty2.setName("TestCounterpartyA");
+
+        // New Trade Two
+        Trade trade2 = new Trade();
+        trade2.setId(2L);
+        trade2.setTradeId(100002L);
+        trade2.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade2.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade2.setBook(book2);
+        trade2.setTraderUser(tradeUser1);
+        trade2.setCounterparty(counterparty2);
+
+        // New Trade Three
+        Trade trade3 = new Trade();
+        trade3.setId(3L);
+        trade3.setTradeId(100003L);
+        trade3.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade3.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade3.setBook(book);
+        trade3.setTraderUser(tradeUser2);
+        trade3.setCounterparty(counterparty);
+
+        // bookName, counterpartyName and traderUserFirstName was used to search
+        SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria("TestBookA", "TestCounterpartyA", "John", null,
+                null, null, null,
+                null, null);
+
+        // Mocked finding the trade based on the Specification - <Specification<Trade>
+        when(tradeRepository.findAll(ArgumentMatchers.<Specification<Trade>>any()))
+                .thenReturn(List.of(trade2));
+
+        // When - Uses the method from the service to check if the trades with same
+        // "bookName", "counterpartyName" and "tradeUserFirstName" has been found.
+        List<Trade> result = tradeService.getAllTradesByCriteria(criteriaSearch);
+
+        // Then - Verifies one result is returned and the search matches the criteria.
+        assertEquals(1, result.size());
+        assertTrue(result.stream().allMatch(t -> t.getBook().getBookName().equals("TestBookA") && t.getCounterparty()
+                .getName().equals("TestCounterpartyA") && t.getTraderUser().getFirstName().equals("John")));
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any());
+
+    }
+
 }
