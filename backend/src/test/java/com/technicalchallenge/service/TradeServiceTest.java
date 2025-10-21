@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.Book;
@@ -22,9 +23,11 @@ import com.technicalchallenge.repository.TradeStatusRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -394,6 +397,49 @@ class TradeServiceTest {
         assertEquals(12, tradeleg2.getCashflows().size()); // tradeleg2 has 12 cashflows
         verify(cashflowRepository, times(24)).save(any(Cashflow.class)); // The Cashflow Repository iterates 24 times.
                                                                          // 12 cashflows for each tradeleg.
+
+    }
+
+    /**
+     * Tests if searching for trades by bookName is successful
+     */
+    @Test
+    void testGetTradesByBook_Success() {
+        // Given - Mocked the searchTradeByCriteriaDTO and the repository and assigned
+        // the trades with a
+        // book.
+
+        // New Trade Two
+        Trade trade2 = new Trade();
+        trade2.setId(2L);
+        trade2.setTradeId(100002L);
+        trade2.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade2.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade2.setBook(book);
+
+        // New Trade Three
+        Trade trade3 = new Trade();
+        trade3.setId(3L);
+        trade3.setTradeId(100003L);
+        trade3.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade3.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade3.setBook(book);
+
+        SearchTradeByCriteria bookSearch = new SearchTradeByCriteria("TestBookC", null, null, null, null, null, null,
+                null, null);
+
+        // Mocked finding all trades based on the Specification - <Specification<Trade>
+        when(tradeRepository.findAll(ArgumentMatchers.<Specification<Trade>>any())).thenReturn(List.of(trade2, trade3));
+
+        // When - Uses the method from the service to check if the trades with the same
+        // "bookName" have
+        // been found.
+        List<Trade> result = tradeService.getAllTradesByCriteria(bookSearch);
+
+        // Then - Verifies two result are returned and the search matches the bookName.
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(t -> t.getBook().getBookName().equals("TestBookC")));
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any());
 
     }
 }

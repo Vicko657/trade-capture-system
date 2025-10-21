@@ -63,6 +63,7 @@ public class TradeService {
 
     // Multi Criteria Search - By counterparty, book, trader, status, date ranges
     public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
+        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
         return tradeRepository.findAll(specification);
     }
