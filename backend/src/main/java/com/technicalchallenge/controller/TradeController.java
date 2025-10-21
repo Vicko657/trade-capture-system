@@ -1,9 +1,12 @@
 package com.technicalchallenge.controller;
 
+import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
+import com.technicalchallenge.specification.TradeSpecification;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +38,18 @@ public class TradeController {
     private TradeService tradeService;
     @Autowired
     private TradeMapper tradeMapper;
+
+    @Operation(summary = "Get all trades by search criteria", description = "Retrieves Trades by counterparty, book, trader, status, date ranges and returns comprehensive trade information including legs and cashflows.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades under the searched criteria", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/search")
+    public List<TradeDTO> getAllTradesByCriteria(@Valid SearchTradeByCriteria searchTradeByCriteria) {
+        return tradeService.getAllTradesByCriteria(searchTradeByCriteria).stream()
+                .map(tradeMapper::toDto)
+                .toList();
+    }
 
     @GetMapping
     @Operation(summary = "Get all trades", description = "Retrieves a list of all trades in the system. Returns comprehensive trade information including legs and cashflows.")

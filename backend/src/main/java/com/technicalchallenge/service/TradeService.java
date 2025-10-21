@@ -1,10 +1,14 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
+import com.technicalchallenge.specification.TradeSpecification;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -56,6 +60,12 @@ public class TradeService {
     private PayRecRepository payRecRepository;
     @Autowired
     private AdditionalInfoService additionalInfoService;
+
+    // Multi Criteria Search - By counterparty, book, trader, status, date ranges
+    public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
+        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
+        return tradeRepository.findAll(specification);
+    }
 
     public List<Trade> getAllTrades() {
         logger.info("Retrieving all trades");
