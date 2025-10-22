@@ -79,6 +79,34 @@ public class TradeControllerTest {
         when(tradeMapper.toEntity(any(TradeDTO.class))).thenReturn(trade);
     }
 
+    /**
+     * Tests expected response code when a trade has been searched
+     */
+    @Test
+    void testGetAllTradesByCriteria() throws Exception {
+        // Given - New Trade and mocked service method
+        List<Trade> trades = List.of(trade);
+        when(tradeService.getAllTradesByCriteria(any())).thenReturn(trades);
+
+        // When/Then
+        // set up a GET request to a test endpoint
+        mockMvc.perform(get("/api/trades/search")
+                // parameters used - bookName and tradeStatus
+                .param("bookName", "TestBook")
+                .param("tradeStatus", "LIVE")
+                // expect JSON to be returned
+                .contentType(MediaType.APPLICATION_JSON))
+                // expect response status 200 OK REQUEST
+                .andExpect(status().isOk())
+                // expect JSON path to return one trade and have matching bookName and
+                // tradeStatus
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].bookName", is("TestBook")))
+                .andExpect(jsonPath("$[0].tradeStatus", is("LIVE")));
+        // Verifies the search happened once
+        verify(tradeService).getAllTradesByCriteria(any());
+    }
+
     @Test
     void testGetAllTrades() throws Exception {
         // Given

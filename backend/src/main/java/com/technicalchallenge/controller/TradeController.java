@@ -45,10 +45,14 @@ public class TradeController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/search")
-    public List<TradeDTO> getAllTradesByCriteria(@Valid SearchTradeByCriteria searchTradeByCriteria) {
-        return tradeService.getAllTradesByCriteria(searchTradeByCriteria).stream()
+    public ResponseEntity<List<TradeDTO>> getAllTradesByCriteria(@Valid SearchTradeByCriteria searchTradeByCriteria) {
+
+        List<TradeDTO> trades = tradeService.getAllTradesByCriteria(searchTradeByCriteria).stream()
                 .map(tradeMapper::toDto)
                 .toList();
+
+        return ResponseEntity.ok(trades);
+
     }
 
     @GetMapping
