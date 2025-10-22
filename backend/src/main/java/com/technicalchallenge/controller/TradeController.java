@@ -42,6 +42,7 @@ public class TradeController {
     @Operation(summary = "Get all trades by search criteria", description = "Retrieves Trades by counterparty, book, trader, status, date ranges and returns comprehensive trade information including legs and cashflows.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades under the searched criteria", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
+            @ApiResponse(responseCode = "204", description = "No Trades found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/search")
@@ -51,7 +52,11 @@ public class TradeController {
                 .map(tradeMapper::toDto)
                 .toList();
 
-        return ResponseEntity.ok(trades);
+        if (trades.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(trades);
+        }
 
     }
 

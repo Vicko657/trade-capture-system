@@ -2,6 +2,7 @@ package com.technicalchallenge.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
@@ -103,6 +104,25 @@ public class TradeControllerTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].bookName", is("TestBook")))
                 .andExpect(jsonPath("$[0].tradeStatus", is("LIVE")));
+        // Verifies the search happened once
+        verify(tradeService).getAllTradesByCriteria(any());
+    }
+
+    /**
+     * Tests expected response code when the search returns empty list
+     */
+    @Test
+    void testGetAllTradesByCriteriaNoContent() throws Exception {
+        // Given - Mocked Service returns empty list
+        when(tradeService.getAllTradesByCriteria(any())).thenReturn(List.of());
+
+        // When/Then
+        // set up a GET request to a test endpoint
+        mockMvc.perform(get("/api/trades/search")
+                // parameters used - bookName that doesn't exist
+                .param("bookName", "NonExistentBook"))
+                // expect response status 204 NO CONTENT
+                .andExpect(status().isNoContent());
         // Verifies the search happened once
         verify(tradeService).getAllTradesByCriteria(any());
     }
