@@ -3,6 +3,7 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.specification.TradeSpecification;
@@ -63,7 +64,18 @@ public class TradeService {
 
     // Multi Criteria Search - By counterparty, book, trader, status, date ranges
     public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
+
         logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
+
+        // Validate date range for tradeDate - if the end date is before the start date
+        // the exception is thrown
+        if (searchTradeByCriteria.tradeStartDate() != null && searchTradeByCriteria.tradeEndDate() != null
+                && searchTradeByCriteria.tradeEndDate().isBefore(searchTradeByCriteria.tradeStartDate())) {
+            throw new InvalidSearchCriteriaException("End date cannot be before start date");
+        }
+
+        logger.debug("Search validation passed to find trade");
+
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
         return tradeRepository.findAll(specification);
     }

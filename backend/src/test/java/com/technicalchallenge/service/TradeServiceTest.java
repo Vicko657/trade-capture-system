@@ -3,6 +3,7 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Cashflow;
@@ -516,6 +517,31 @@ class TradeServiceTest {
         assertTrue(result.stream().allMatch(t -> t.getBook().getBookName().equals("TestBookA") && t.getCounterparty()
                 .getName().equals("TestCounterpartyA") && t.getTraderUser().getFirstName().equals("John")));
         verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any());
+
+    }
+
+    /**
+     * Tests if invalid date range fails when searching for trades
+     */
+    @Test
+    void testGetTradesByInvalidDateRange_ShouldFail() {
+
+        // Given - Invalid tradeStartDate (3/10/2025) and tradeEndDate (3/5/2025) was
+        // used to search for all trades with tradeDate within the date range
+        SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, null, null, null,
+                null, null, null,
+                LocalDate.of(2025, 10, 3), LocalDate.of(2025, 5, 3));
+
+        // When - A InvalidSearchCriteriaException is thrown and assertThrows returns
+        // the exception
+        InvalidSearchCriteriaException invalidSearchCriteriaException = assertThrows(
+                InvalidSearchCriteriaException.class,
+                () -> {
+                    tradeService.getAllTradesByCriteria(criteriaSearch);
+                });
+
+        // Then - Verifies the exception was thrown.
+        assertEquals("End date cannot be before start date", invalidSearchCriteriaException.getMessage());
 
     }
 
