@@ -90,7 +90,6 @@ class TradeServiceTest {
     private Trade trade;
     private Book book;
     private Counterparty counterparty;
-    private Counterparty counterparty2;
     private TradeStatus tradeStatus;
     private TradeLeg tradeLeg;
     private TradeLeg tradeleg1;
@@ -543,6 +542,44 @@ class TradeServiceTest {
         // Then - Verifies the exception was thrown.
         assertEquals("End date cannot be before start date", invalidSearchCriteriaException.getMessage());
 
+    }
+
+    /**
+     * Tests if finding trades for a specific counterparty by RSQL is successful.
+     * Using the RSQL JPA Spring Boot Starter plugin
+     */
+    @Test
+    void testGetTradesByRSQL_Success() {
+        // Given - Created the query, new trade entities and assigned
+        // the trades with a
+        // counterparty and mocked the repository.
+        String query = "query=counterparty.name==TestCounterpartyC";
+
+        // New Trade Two
+        Trade trade2 = new Trade();
+        trade2.setId(2L);
+        trade2.setTradeId(100002L);
+        trade2.setCounterparty(counterparty);
+
+        // New Trade Three
+        Trade trade3 = new Trade();
+        trade3.setId(3L);
+        trade3.setTradeId(100003L);
+        trade3.setCounterparty(counterparty);
+
+        // Mocked finding all trades based on the Specification - <Specification<Trade>
+        when(tradeRepository.findAll(ArgumentMatchers.<Specification<Trade>>any()))
+                .thenReturn(List.of(trade2, trade3));
+
+        // When - Uses the rsql method call from the service to check if the trades with
+        // same "counterpartyName" have been found.
+        List<Trade> result = tradeService.getAllTradesByRSQL(query);
+
+        // Then - Verifies that 2 trades were found and the search matches the
+        // counterpartyName.
+        assertEquals(2, result.size());
+        assertEquals("TestCounterpartyC", result.get(0).getCounterparty().getName());
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any());
     }
 
 }
