@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.dto.PaginationDTO;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
@@ -12,6 +13,9 @@ import com.technicalchallenge.specification.TradeSpecification;
 import io.github.perplexhub.rsql.RSQLJPASupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +68,18 @@ public class TradeService {
     private PayRecRepository payRecRepository;
     @Autowired
     private AdditionalInfoService additionalInfoService;
+
+    // Filtered Search - Paginated filtering for all Trades
+    public List<Trade> getAllTrades(PaginationDTO pagination) {
+
+        // Pagination
+        Integer pageNo = pagination.pageNo();
+        Integer pageSize = pagination.pageSize();
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+
+        Page<Trade> pageTrade = tradeRepository.findAll(pageable);
+        return pageTrade.getContent();
+    }
 
     // RSQL Search - The RSQL plugin automatically builds the JPA specification with
     // less code and provides filtering support for power users.

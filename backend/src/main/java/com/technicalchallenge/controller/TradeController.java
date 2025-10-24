@@ -1,5 +1,6 @@
 package com.technicalchallenge.controller;
 
+import com.technicalchallenge.dto.PaginationDTO;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.mapper.TradeMapper;
@@ -38,6 +39,22 @@ public class TradeController {
     @Autowired
     private TradeMapper tradeMapper;
 
+    @GetMapping("/filter")
+    public ResponseEntity<List<TradeDTO>> getAllTrades(
+            @Valid PaginationDTO pagination) {
+
+        List<TradeDTO> trades = tradeService.getAllTrades(pagination).stream()
+                .map(tradeMapper::toDto)
+                .toList();
+
+        if (trades.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(trades);
+        }
+
+    }
+
     @Operation(summary = "Get all trades by rsql", description = "Retrieves a list of trades filtered by RSQL JPA Spring Boot starter query plugin, io.github.perplexhub:rsql-jpa-spring-boot-starter, to process dynamic RSQL query strings")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades by RSQL", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
@@ -67,7 +84,8 @@ public class TradeController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/search")
-    public ResponseEntity<List<TradeDTO>> getAllTradesByCriteria(@Valid SearchTradeByCriteria searchTradeByCriteria) {
+    public ResponseEntity<List<TradeDTO>> getAllTradesByCriteria(
+            @Valid SearchTradeByCriteria searchTradeByCriteria) {
 
         List<TradeDTO> trades = tradeService.getAllTradesByCriteria(searchTradeByCriteria).stream()
                 .map(tradeMapper::toDto)
