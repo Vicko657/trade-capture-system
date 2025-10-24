@@ -3,6 +3,7 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
 import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
@@ -580,6 +581,27 @@ class TradeServiceTest {
         assertEquals(2, result.size());
         assertEquals("TestCounterpartyC", result.get(0).getCounterparty().getName());
         verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any());
+    }
+
+    /**
+     * Tests when the query is missing or null, a exception is thrown. Using the
+     * RSQL JPA Spring Boot Starter plugin
+     */
+    @Test
+    void testGetTradesByRSQL_MissingQuery() {
+        // Given - The query is empty
+        String query = "";
+
+        // When - A InvalidRsqlQueryException is thrown and assertThrows returns
+        // the exception
+        InvalidRsqlQueryException invalidRsqlQueryException = assertThrows(
+                InvalidRsqlQueryException.class,
+                () -> {
+                    tradeService.getAllTradesByRSQL(query);
+                });
+
+        // Then - Verifies the exception was thrown.
+        assertEquals("Query must not be null or empty", invalidRsqlQueryException.getMessage());
     }
 
 }

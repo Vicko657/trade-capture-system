@@ -3,6 +3,7 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
 import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
@@ -69,6 +70,14 @@ public class TradeService {
 
     public List<Trade> getAllTradesByRSQL(String query) {
         logger.info("Retrieving all trades by rsql: {}", query);
+
+        // Validate query - if the query is null or missing the exception is thrown
+        if (query == null || query.isEmpty()) {
+            throw new InvalidRsqlQueryException("Query must not be null or empty");
+        }
+
+        logger.debug("Query validation passed to find trade");
+
         Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
         return tradeRepository.findAll(specfication);
     }
