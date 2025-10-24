@@ -225,4 +225,57 @@ public class TradeControllerIntegrationTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * RSQL Search: Tests expected response code when a trade has been
+     * searched by the same Counterparty
+     */
+    @Test
+    void shouldReturnTradesMatchingCounterparty() throws Exception {
+
+        mockMvc.perform(get("/api/trades/rsql")
+                .param("query", "counterparty.name==MegaFund")
+                .contentType(
+                        MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].counterpartyName").value("MegaFund"))
+                .andExpect(jsonPath("$[0].tradeStatus").value("NEW"))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    /**
+     * RSQL Search: Tests expected response code when a trade has been searched
+     * using the complex multi criteria
+     * 
+     */
+    @Test
+    void shouldReturnTradesMatchingComplexMultiCriteriaSearch() throws Exception {
+
+        mockMvc.perform(get("/api/trades/rsql")
+                .param("query", "(counterparty.name==BigBank,counterparty.name==MegaFund);tradeStatus.tradeStatus==NEW")
+                .contentType(
+                        MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].bookName").value("FX-BOOK-1"))
+                .andExpect(jsonPath("$[1].counterpartyName").value("BigBank"))
+                .andExpect(jsonPath("$[0].tradeStatus").value("NEW"))
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    /**
+     * RSQL Search: Tests expected response code when a trade has been
+     * searched using date range
+     */
+    @Test
+    void shouldReturnTradesMatchingDateRange() throws Exception {
+
+        mockMvc.perform(get("/api/trades/rsql")
+                .param("query", "tradeDate=ge=2025-01-01;tradeDate=le=2025-12-31")
+                .contentType(
+                        MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tradeDate").value("2025-02-04"))
+                .andExpect(jsonPath("$[1].tradeDate").value("2025-03-30"))
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
 }
