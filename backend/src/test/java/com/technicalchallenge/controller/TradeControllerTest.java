@@ -109,6 +109,26 @@ public class TradeControllerTest {
     }
 
     /**
+     * Tests expected response code when the rsql search returns empty list
+     */
+    @Test
+    void testGetAllTradesByRsqlNoContent() throws Exception {
+        // Given - Mocked Service returns empty list
+        when(tradeService.getAllTradesByRSQL(any())).thenReturn(List.of());
+
+        // When/Then
+        // set up a GET request to a test endpoint
+        mockMvc.perform(get("/api/trades/rsql")
+                // parameters used - query(tradeId that does not exist)
+                .param("query",
+                        "tradeId==1002L"))
+                // expect response status 204 NO CONTENT
+                .andExpect(status().isNoContent());
+        // Verifies the search happened once
+        verify(tradeService).getAllTradesByRSQL(any());
+    }
+
+    /**
      * Tests expected response code when a trade has been searched
      */
     @Test

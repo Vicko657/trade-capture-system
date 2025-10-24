@@ -52,7 +52,11 @@ public class TradeController {
                 .map(tradeMapper::toDto)
                 .toList();
 
-        return ResponseEntity.ok(trades);
+        if (trades.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(trades);
+        }
 
     }
 
