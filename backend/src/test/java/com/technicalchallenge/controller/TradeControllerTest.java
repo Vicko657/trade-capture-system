@@ -81,6 +81,34 @@ public class TradeControllerTest {
     }
 
     /**
+     * Tests expected response code when a trade has been searched using RSQL
+     */
+    @Test
+    void testGetAllTradesByRSQL() throws Exception {
+        // Given - New Trade and mocked service method
+        List<Trade> trades = List.of(trade);
+        when(tradeService.getAllTradesByRSQL(any())).thenReturn(trades);
+
+        // When/Then
+        // set up a GET request to a test endpoint
+        mockMvc.perform(get("/api/trades/rsql")
+                // parameters used - query(bookName and utiCode)
+                .param("query",
+                        "book.bookName==TestBook;utiCode==UTI123456789")
+                // expect JSON to be returned
+                .contentType(MediaType.APPLICATION_JSON))
+                // expect response status 200 OK REQUEST
+                .andExpect(status().isOk())
+                // expect JSON path to return one trade and have matching bookName and
+                // counterpartyName
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].bookName", is("TestBook")))
+                .andExpect(jsonPath("$[0].counterpartyName", is("TestCounterparty")));
+        // Verifies the search happened once
+        verify(tradeService).getAllTradesByRSQL(any());
+    }
+
+    /**
      * Tests expected response code when a trade has been searched
      */
     @Test
