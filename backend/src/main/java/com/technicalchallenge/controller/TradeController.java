@@ -5,7 +5,6 @@ import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
-import com.technicalchallenge.specification.TradeSpecification;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -38,6 +37,24 @@ public class TradeController {
     private TradeService tradeService;
     @Autowired
     private TradeMapper tradeMapper;
+
+    @Operation(summary = "Get all trades by rsql", description = "Retrieves a list of trades filtered by RSQL JPA Spring Boot starter query plugin, io.github.perplexhub:rsql-jpa-spring-boot-starter, to process dynamic RSQL query strings")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades by RSQL", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
+            @ApiResponse(responseCode = "204", description = "No Trades found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/rsql")
+    public ResponseEntity<List<TradeDTO>> getTradesByRSQL(
+            @Valid @RequestParam(value = "query", required = false) String query) {
+
+        List<TradeDTO> trades = tradeService.getAllTradesByRSQL(query).stream()
+                .map(tradeMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok(trades);
+
+    }
 
     @Operation(summary = "Get all trades by search criteria", description = "Retrieves Trades by counterparty, book, trader, status, date ranges and returns comprehensive trade information including legs and cashflows.")
     @ApiResponses(value = {

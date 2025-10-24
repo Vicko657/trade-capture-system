@@ -8,6 +8,8 @@ import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.specification.TradeSpecification;
 
+import io.github.perplexhub.rsql.RSQLJPASupport;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,15 @@ public class TradeService {
     private PayRecRepository payRecRepository;
     @Autowired
     private AdditionalInfoService additionalInfoService;
+
+    // RSQL Search - The RSQL plugin automatically builds the JPA specification with
+    // less code and provides filtering support for power users.
+
+    public List<Trade> getAllTradesByRSQL(String query) {
+        logger.info("Retrieving all trades by rsql: {}", query);
+        Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
+        return tradeRepository.findAll(specfication);
+    }
 
     // Multi Criteria Search - By counterparty, book, trader, status, date ranges
     public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
