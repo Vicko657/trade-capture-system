@@ -4,7 +4,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 public record PaginationDTO(
 
-        @RequestParam(required = false, defaultValue = "1") int pageNo,
-        @RequestParam(required = false, defaultValue = "1") int pageSize) {
+                @RequestParam(required = false) Integer pageNo,
+                @RequestParam(required = false) Integer pageSize) {
 
 }

@@ -76,23 +76,58 @@ public class TradeService {
     public List<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
             SortDTO sortFields) {
 
-        // Sort - Sort the trades by column name and in order of ASC or DESC
-        String sortColumn = sortFields.sortBy(); // Default is tradeID
+        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
+
+        // Validate date range for tradeDate - if the end date is before the start date
+        // the exception is thrown
+        if (searchTradeByCriteria.tradeStartDate() != null && searchTradeByCriteria.tradeEndDate() != null
+                && searchTradeByCriteria.tradeEndDate().isBefore(searchTradeByCriteria.tradeStartDate())) {
+            throw new InvalidSearchCriteriaException("End date cannot be before start date");
+        }
+
+        logger.debug("Search validation passed to find trade");
+
+        // Sort - Sort the trades by column name and in order of ASC or DESC, handles if
+        // the sort direction is not filled
+
+        String sortColumn;
         String sortDirection = sortFields.sortDir(); // Default is ASC
 
+        if (sortFields.sortBy() == null || sortFields.sortBy().isBlank()) {
+            sortColumn = "tradeId"; // Default is tradeID
+        } else {
+            sortColumn = sortFields.sortBy();
+        }
+
         Sort sort = null;
-        if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
+        if (sortDirection == null) {
+            sort = Sort.unsorted();
+        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
             sort = Sort.by(sortColumn).ascending();
         } else if (sortDirection.equalsIgnoreCase(Sort.Direction.DESC.name())) {
             sort = Sort.by(sortColumn).descending();
         }
 
-        // Pagination - Changes the amount of trades seen on a page and what page you
-        // are on
-        Integer pageNo = pagination.pageNo();// Default is 1
-        Integer pageSize = pagination.pageSize();// Default is 1
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        // Pagination - Includes a sorted, unsorted page request for the user to be able
+        // to seperately sort or change the pagination
+        Integer pageNo = pagination.pageNo();
+        Integer pageSize = pagination.pageSize();
 
+        Pageable pageable;
+        if (pagination.pageNo() != null && pageSize != null && pageNo > 0 && sort != null) {
+            // Pageable: Page Request with sort parameters applied (Page details and sort
+            // details are not null)
+            pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        } else if (sort == null) {
+            // Pageable: Unsorted page request (With the page details, if the sort is
+            // null)
+            pageable = PageRequest.of(pageNo - 1, pageSize);
+        } else {
+            // Pageable: No pagination setup and seperates the filtered criteria search
+            pageable = Pageable.unpaged();
+        }
+
+        // Filtered - Multi Criteria Search
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
         Page<Trade> pageTrade = tradeRepository.findAll(specification, pageable);
         return pageTrade.getContent();
