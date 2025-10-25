@@ -2,6 +2,7 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.PaginationDTO;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
+import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,13 +71,25 @@ public class TradeService {
     @Autowired
     private AdditionalInfoService additionalInfoService;
 
-    // Filtered Search - Paginated filtering for all Trades
-    public List<Trade> getAllTrades(PaginationDTO pagination) {
+    // Filtered Search - Paginated filtering and sorting for all Trades
+    public List<Trade> getAllTrades(PaginationDTO pagination, SortDTO sortFields) {
 
-        // Pagination
-        Integer pageNo = pagination.pageNo();
-        Integer pageSize = pagination.pageSize();
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+        // Sort - Sort the trades by column name and in order of ASC or DESC
+        String sortColumn = sortFields.sortBy(); // Default is tradeID
+        String sortDirection = sortFields.sortDir(); // Default is ASC
+
+        Sort sort = null;
+        if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
+            sort = Sort.by(sortColumn).ascending();
+        } else {
+            sort = Sort.by(sortColumn).descending();
+        }
+
+        // Pagination - Changes the amount of trades seen on a page and what page you
+        // are on
+        Integer pageNo = pagination.pageNo();// Default is 1
+        Integer pageSize = pagination.pageSize();// Default is 1
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
 
         Page<Trade> pageTrade = tradeRepository.findAll(pageable);
         return pageTrade.getContent();

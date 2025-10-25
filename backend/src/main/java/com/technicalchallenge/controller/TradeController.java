@@ -2,6 +2,7 @@ package com.technicalchallenge.controller;
 
 import com.technicalchallenge.dto.PaginationDTO;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
+import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
@@ -41,9 +42,9 @@ public class TradeController {
 
     @GetMapping("/filter")
     public ResponseEntity<List<TradeDTO>> getAllTrades(
-            @Valid PaginationDTO pagination) {
+            @Valid PaginationDTO pagination, SortDTO sort) {
 
-        List<TradeDTO> trades = tradeService.getAllTrades(pagination).stream()
+        List<TradeDTO> trades = tradeService.getAllTrades(pagination, sort).stream()
                 .map(tradeMapper::toDto)
                 .toList();
 
