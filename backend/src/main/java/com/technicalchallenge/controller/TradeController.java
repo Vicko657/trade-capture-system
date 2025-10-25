@@ -42,9 +42,10 @@ public class TradeController {
 
     @GetMapping("/filter")
     public ResponseEntity<List<TradeDTO>> getAllTrades(
-            @Valid PaginationDTO pagination, SortDTO sort) {
+            @Valid SearchTradeByCriteria searchTradeByCriteria,
+            PaginationDTO pagination, SortDTO sort) {
 
-        List<TradeDTO> trades = tradeService.getAllTrades(pagination, sort).stream()
+        List<TradeDTO> trades = tradeService.getAllTrades(searchTradeByCriteria, pagination, sort).stream()
                 .map(tradeMapper::toDto)
                 .toList();
 

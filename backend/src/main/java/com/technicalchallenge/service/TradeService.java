@@ -71,8 +71,10 @@ public class TradeService {
     @Autowired
     private AdditionalInfoService additionalInfoService;
 
-    // Filtered Search - Paginated filtering and sorting for all Trades
-    public List<Trade> getAllTrades(PaginationDTO pagination, SortDTO sortFields) {
+    // Filtered Search - Multi Criteria By counterparty, book, trader, status, date
+    // ranges, paginated filtering and sorting for all trades
+    public List<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
+            SortDTO sortFields) {
 
         // Sort - Sort the trades by column name and in order of ASC or DESC
         String sortColumn = sortFields.sortBy(); // Default is tradeID
@@ -81,7 +83,7 @@ public class TradeService {
         Sort sort = null;
         if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
             sort = Sort.by(sortColumn).ascending();
-        } else {
+        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.DESC.name())) {
             sort = Sort.by(sortColumn).descending();
         }
 
@@ -91,7 +93,8 @@ public class TradeService {
         Integer pageSize = pagination.pageSize();// Default is 1
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
 
-        Page<Trade> pageTrade = tradeRepository.findAll(pageable);
+        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
+        Page<Trade> pageTrade = tradeRepository.findAll(specification, pageable);
         return pageTrade.getContent();
     }
 
@@ -107,7 +110,6 @@ public class TradeService {
         }
 
         logger.debug("Query validation passed to find trade");
-
         Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
         return tradeRepository.findAll(specfication);
     }
