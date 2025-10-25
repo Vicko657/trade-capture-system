@@ -1,6 +1,8 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.dto.PaginationDTO;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
+import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
@@ -31,6 +33,11 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -38,6 +45,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -604,4 +612,182 @@ class TradeServiceTest {
         assertEquals("Query must not be null or empty", invalidRsqlQueryException.getMessage());
     }
 
+    /**
+     * Tests if pagination with the filter is successful
+     */
+    @Test
+    void testPagedResultsOfTrades_Success() {
+        // Given - List of 3 trade entities, filtered criteria, pagination and sort DTOs
+
+        // New Trade Two
+        Trade trade2 = new Trade();
+        trade2.setId(2L);
+
+        // New Trade Three
+        Trade trade3 = new Trade();
+        trade3.setId(3L);
+
+        List<Trade> trades = new ArrayList<>();
+        trades.add(trade);
+        trades.add(trade2);
+        trades.add(trade3);
+
+        SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, null, null, null, null, null, null, null,
+                null);
+        PaginationDTO pagination = new PaginationDTO(2, 3);
+        SortDTO sortField = new SortDTO(null, null);
+
+        // Mocked repository, page and pageable without sort
+        Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination.pageSize());
+        Page<Trade> mockPage = new PageImpl<>(trades, pageable, trades.size());
+        when(tradeRepository.findAll(ArgumentMatchers
+                .<Specification<Trade>>any(), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        // When - Pagniated Filter method call
+        Page<Trade> result = tradeService.getAllTrades(criteriaSearch, pagination, sortField);
+
+        // Then - Verifies that pagination is working seperately
+        assertEquals(3, result.getContent().size()); // 3
+        assertEquals(2, result.getTotalPages()); // 2 pages
+        assertTrue(result.getPageable().isPaged()); // true
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(), any(Pageable.class));
+    }
+
+    /**
+     * Tests if pagination and sorting with the filter is successful
+     */
+    @Test
+    void testPagedAndSortedResultsOfTrades_Success() {
+        // Given - List of 3 trade entities, filtered criteria, pagination and sort DTOs
+
+        // New Trade Two
+        Trade trade2 = new Trade();
+        trade2.setId(2L);
+
+        // New Trade Three
+        Trade trade3 = new Trade();
+        trade3.setId(3L);
+
+        List<Trade> trades = new ArrayList<>();
+        trades.add(trade3);
+        trades.add(trade2);
+        trades.add(trade);
+
+        SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, null, null, null, null, null, null, null,
+                null);
+        PaginationDTO pagination = new PaginationDTO(1, 4);
+        SortDTO sortField = new SortDTO("id", "desc");
+
+        // Mocked Pageable with sort, page and repository
+        Sort sort = Sort.by("id").descending();
+        Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination
+                .pageSize(),
+                sort);
+
+        Page<Trade> mockPage = new PageImpl<>(trades, pageable, trades.size());
+        when(tradeRepository.findAll(ArgumentMatchers
+                .<Specification<Trade>>any(), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        // When - Pagniated Filter method call
+        Page<Trade> result = tradeService.getAllTrades(criteriaSearch, pagination, sortField);
+
+        // Then - Verifies that both sort and pagination is working
+        assertTrue(result.getSort().isSorted()); // true
+        assertEquals(3, result.getContent().size()); // 3 results
+        assertEquals(3L, result.getContent().get(0).getId()); // desc order
+        assertTrue(result.getPageable().isPaged()); // true
+        assertEquals(1, result.getTotalPages()); // 1 page
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(), any(Pageable.class));
+    }
+
+    /**
+     * Tests if combining the filtered search, pagination and sorting with the
+     * filter is successful
+     */
+    @Test
+    void testCombinitationOfFilteredSearchPaginationAndSortingForResultsOfTrades_Success() {
+        // Given - List of 3 trade entities, ciltered criteria, pagination and sort DTOs
+
+        Book book2 = new Book();
+        book2.setBookName("TestBookA");
+
+        // New Trade Two
+        Trade trade2 = new Trade();
+        trade2.setId(2L);
+        trade2.setTradeId(1002L);
+        trade2.setBook(book2);
+
+        // New Trade Three
+        Trade trade3 = new Trade();
+        trade3.setId(3L);
+        trade3.setTradeId(1003L);
+        trade3.setBook(book2);
+
+        List<Trade> trades = new ArrayList<>();
+        trades.add(trade3);
+        trades.add(trade2);
+
+        SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria("TestBookA", null, null, null,
+                null, null, null,
+                null, null);
+        PaginationDTO pagination = new PaginationDTO(2, 3);
+        SortDTO sortField = new SortDTO("tradeId", "desc");
+
+        // Mocked Pageable with sort, page and repository
+        Sort sort = Sort.by("id").descending();
+        Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination
+                .pageSize(),
+                sort);
+
+        Page<Trade> mockPage = new PageImpl<>(trades, pageable, trades.size());
+        when(tradeRepository.findAll(ArgumentMatchers
+                .<Specification<Trade>>any(), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        // When - Pagniated Filter method call
+        Page<Trade> result = tradeService.getAllTrades(criteriaSearch, pagination, sortField);
+
+        // Then - Verifies that filter, sort and pagination work together
+        assertEquals(2, result.getContent().size()); // 2 results
+        assertEquals(1003L, result.getContent().get(0).getTradeId()); // trade3 is first (desc order)
+        assertEquals("TestBookA", result.getContent().get(1).getBook().getBookName()); // trade2 bookName is "TestBookA"
+        assertEquals(2, result.getTotalPages()); // 2 pages
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(), any(Pageable.class));
+    }
+
+    /**
+     * Tests if filtered, pagination and sorting returns empty page when no results
+     * are found
+     */
+    @Test
+    void testPaginatedFilter_EmptyPage() {
+        // Given - Filtered Criteria, pagination and sort DTOs
+        SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, "TestCounterpartyA", null, null,
+                null, null, null,
+                null, null);
+        PaginationDTO pagination = new PaginationDTO(1, 6);
+        SortDTO sortField = new SortDTO("tradeId", "desc");
+
+        // Mocked Pageable with sort, page and repository
+        Sort sort = Sort.by("id").descending();
+        Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination
+                .pageSize(),
+                sort);
+
+        Page<Trade> mockPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        when(tradeRepository.findAll(ArgumentMatchers
+                .<Specification<Trade>>any(), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        // When - Pagniated Filter method call
+        Page<Trade> result = tradeService.getAllTrades(criteriaSearch, pagination, sortField);
+
+        // Then - Verifies that a empty page is returned
+        assertNotNull(result); // result is not null
+        assertTrue(result.getContent().isEmpty()); // no results
+        assertEquals(0, result.getTotalElements()); // 0 trades
+        verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(), any(Pageable.class));
+    }
 }
