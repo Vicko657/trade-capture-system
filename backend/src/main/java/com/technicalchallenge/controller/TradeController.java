@@ -9,6 +9,7 @@ import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -41,12 +42,11 @@ public class TradeController {
     private TradeMapper tradeMapper;
 
     @GetMapping("/filter")
-    public ResponseEntity<List<TradeDTO>> getAllTrades(@Valid SearchTradeByCriteria searchTradeByCriteria,
+    public ResponseEntity<Page<TradeDTO>> getAllTrades(@Valid SearchTradeByCriteria searchTradeByCriteria,
             PaginationDTO pagination, SortDTO sort) {
 
-        List<TradeDTO> trades = tradeService.getAllTrades(searchTradeByCriteria, pagination, sort).stream()
-                .map(tradeMapper::toDto)
-                .toList();
+        Page<TradeDTO> trades = tradeService.getAllTrades(searchTradeByCriteria, pagination, sort)
+                .map(tradeMapper::toDto);
 
         if (trades.isEmpty()) {
             return ResponseEntity.noContent().build();

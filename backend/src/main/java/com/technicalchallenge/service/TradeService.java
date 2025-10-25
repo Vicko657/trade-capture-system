@@ -73,7 +73,7 @@ public class TradeService {
 
     // Filtered Search - Multi Criteria By counterparty, book, trader, status, date
     // ranges, paginated filtering and sorting for all trades
-    public List<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
+    public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
             SortDTO sortFields) {
 
         logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
@@ -129,8 +129,7 @@ public class TradeService {
 
         // Filtered - Multi Criteria Search
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-        Page<Trade> pageTrade = tradeRepository.findAll(specification, pageable);
-        return pageTrade.getContent();
+        return tradeRepository.findAll(specification, pageable);
     }
 
     // RSQL Search - The RSQL plugin automatically builds the JPA specification with
