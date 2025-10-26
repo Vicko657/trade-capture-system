@@ -41,6 +41,12 @@ public class TradeController {
     @Autowired
     private TradeMapper tradeMapper;
 
+    @Operation(summary = "Get a result of paginated filtered trades by filter", description = "Returns a page of trades, that can be filtered, paginated or sorted")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated filtered trades", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
+            @ApiResponse(responseCode = "204", description = "No Trades found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping("/filter")
     public ResponseEntity<Page<TradeDTO>> getAllTrades(@Valid SearchTradeByCriteria searchTradeByCriteria,
             PaginationDTO pagination, SortDTO sort) {
