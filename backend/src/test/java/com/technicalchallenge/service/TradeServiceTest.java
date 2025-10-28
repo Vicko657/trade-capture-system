@@ -7,6 +7,7 @@ import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
 import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
+import com.technicalchallenge.exceptions.ValidationException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Cashflow;
@@ -26,6 +27,9 @@ import com.technicalchallenge.repository.ScheduleRepository;
 import com.technicalchallenge.repository.TradeLegRepository;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.repository.TradeStatusRepository;
+import com.technicalchallenge.validation.TradeValidator;
+import com.technicalchallenge.validation.ValidationResult;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,6 +95,9 @@ class TradeServiceTest {
 
     @Mock
     private ApplicationUserRepository applicationUserRepository;
+
+    @Mock
+    private TradeValidator tradeValidator;
 
     @InjectMocks
     private TradeService tradeService;
@@ -226,6 +233,14 @@ class TradeServiceTest {
 
         trade.setTradeLegs(List.of(tradeleg2, tradeleg2));
         tradeDTO.setTradeLegs(List.of(leg1, leg2));
+
+    }
+
+    private void missingMockedStubs() {
+        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
+        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
+        when(tradeStatusRepository.findByTradeStatus("NEW"))
+                .thenReturn(Optional.of(tradeStatus));
 
     }
 
@@ -790,4 +805,58 @@ class TradeServiceTest {
         assertEquals(0, result.getTotalElements()); // 0 trades
         verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(), any(Pageable.class));
     }
+
+    /**
+     * Tests if business rules validation is working
+     */
+    @Test
+    void testCreateTradeValidationBusinessRules_Success() {
+
+        // Given - Validation Result & mocked stubbing
+
+        // Book, counterparties & trade status
+        missingMockedStubs();
+
+        ValidationResult validResult = ValidationResult.isValid();
+
+        // Mocked validateTradeBusinessRules method, saving a trade and tradelegs
+        when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(validResult);
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeLeg);
+
+        // When - createTrade method call
+        tradeService.populateReferenceDataByName(trade, tradeDTO);
+        Trade result = tradeService.createTrade(tradeDTO);
+
+        // Then - Verifies the trade was created and there was no errors
+        assertNotNull(result);
+        verify(tradeValidator).validateTradeBusinessRules(tradeDTO);
+
+    }
+
+    /**
+     * Tests if business rules validation throws exceptions
+     */
+    @Test
+    void testCreateTradeValidationBusinessRules_ShouldFail() {
+
+        // Given - List of errors, validation result & mocked stubbing
+
+        List<String> errors = new ArrayList<>();
+        errors.add("Start date cannot be before trade date");
+        ValidationResult invalidResult = ValidationResult.isNotValid(errors);
+
+        // Mocked validateTradeBusinessRules method, saving a trade and tradelegs
+        when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(invalidResult);
+
+        // When - A ValidationException is thrown and assertThrows returns
+        // the exception
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            tradeService.createTrade(tradeDTO);
+        });
+
+        // Then - Verifies the exception was thrown
+        assertEquals("Start date cannot be before trade date", exception.getMessage());
+    }
+
 }
