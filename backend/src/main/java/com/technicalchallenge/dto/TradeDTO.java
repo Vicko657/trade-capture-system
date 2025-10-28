@@ -26,12 +26,15 @@ public class TradeDTO {
     private LocalDate tradeDate;
 
     @JsonProperty("startDate")
+    @NotNull(message = "Trade start date is required")
     private LocalDate tradeStartDate;
 
     @JsonProperty("maturityDate")
+    @NotNull(message = "Trade maturity date is required")
     private LocalDate tradeMaturityDate;
 
     @JsonProperty("executionDate")
+    @NotNull(message = "Trade execution date is required")
     private LocalDate tradeExecutionDate;
 
     private String utiCode;

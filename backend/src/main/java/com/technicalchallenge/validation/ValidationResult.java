@@ -1,34 +1,38 @@
 package com.technicalchallenge.validation;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.technicalchallenge.exceptions.ValidationException;
 
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.AllArgsConstructor;
 
-@RestControllerAdvice
+@AllArgsConstructor
 public class ValidationResult {
 
-    // Handles All Validation Errors
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleFieldValidationErrors(
-            MethodArgumentNotValidException e, HttpServletRequest request) {
+    private final boolean valid;
+    private final List<String> errors;
 
-        List<String> validationResult = new ArrayList<>();
+    // isValid - Error list is empty and returns emptylist
+    public static ValidationResult isValid() {
+        return new ValidationResult(true, Collections.emptyList());
+    }
 
-        e.getBindingResult().getAllErrors().forEach(error -> {
-            String message = error.getDefaultMessage();
-            validationResult.add(message);
-        });
+    // isNotValid - Error list has errors and returns list of errors
+    public static ValidationResult isNotValid(List<String> errors) {
+        return new ValidationResult(false, errors);
+    }
 
-        return ResponseEntity.badRequest().body(validationResult);
+    // Getter - Errors
+    public List<String> getErrors() {
+        return errors;
+    }
+
+    // throws a ValidationException when there is a validation error
+    public void throwifNotValid() {
+        if (!valid) {
+            throw new ValidationException(errors);
+        }
     }
 
 }

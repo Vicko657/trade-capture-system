@@ -10,6 +10,8 @@ import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.specification.TradeSpecification;
+import com.technicalchallenge.validation.TradeValidator;
+import com.technicalchallenge.validation.ValidationResult;
 
 import io.github.perplexhub.rsql.RSQLJPASupport;
 
@@ -70,6 +72,8 @@ public class TradeService {
     private PayRecRepository payRecRepository;
     @Autowired
     private AdditionalInfoService additionalInfoService;
+    @Autowired
+    private TradeValidator tradeValidator;
 
     // Filtered Search - Multi Criteria By counterparty, book, trader, status, date
     // ranges, paginated filtering and sorting for all trades
@@ -189,6 +193,11 @@ public class TradeService {
         }
 
         // Validate business rules
+
+        // New Trade Validation for Business Rules
+        ValidationResult validation = tradeValidator.validateTradeBusinessRules(tradeDTO);
+        validation.throwifNotValid();
+
         validateTradeCreation(tradeDTO);
 
         // Create trade entity
@@ -451,17 +460,6 @@ public class TradeService {
     }
 
     private void validateTradeCreation(TradeDTO tradeDTO) {
-        // Validate dates - Fixed to use consistent field names
-        if (tradeDTO.getTradeStartDate() != null && tradeDTO.getTradeDate() != null) {
-            if (tradeDTO.getTradeStartDate().isBefore(tradeDTO.getTradeDate())) {
-                throw new RuntimeException("Start date cannot be before trade date");
-            }
-        }
-        if (tradeDTO.getTradeMaturityDate() != null && tradeDTO.getTradeStartDate() != null) {
-            if (tradeDTO.getTradeMaturityDate().isBefore(tradeDTO.getTradeStartDate())) {
-                throw new RuntimeException("Maturity date cannot be before start date");
-            }
-        }
 
         // Validate trade has exactly 2 legs
         if (tradeDTO.getTradeLegs() == null || tradeDTO.getTradeLegs().size() != 2) {
@@ -708,4 +706,5 @@ public class TradeService {
         // atomic and thread-safe.
         return 10000L + tradeRepository.count();
     }
+
 }
