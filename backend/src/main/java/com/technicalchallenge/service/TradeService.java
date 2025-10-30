@@ -5,8 +5,14 @@ import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.exceptions.BookNotFoundException;
+import com.technicalchallenge.exceptions.CounterpartyNotFoundException;
 import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
 import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
+import com.technicalchallenge.exceptions.TradeStatusNotFoundException;
+import com.technicalchallenge.exceptions.TradeSubTypeNotFoundException;
+import com.technicalchallenge.exceptions.TradeTypeNotFoundException;
+import com.technicalchallenge.exceptions.UserNotFoundException;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.specification.TradeSpecification;
@@ -14,6 +20,7 @@ import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
 
 import io.github.perplexhub.rsql.RSQLJPASupport;
+import jakarta.validation.ValidationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -192,13 +199,13 @@ public class TradeService {
             logger.info("Generated trade ID: {}", generatedTradeId);
         }
 
-        // Validate business rules
+        // Validate trade business rules
+        ValidationResult tradeBusinessValidation = tradeValidator.validateTradeBusinessRules(tradeDTO);
+        tradeBusinessValidation.throwifNotValid();
 
-        // New Trade Validation for Business Rules
-        ValidationResult validation = tradeValidator.validateTradeBusinessRules(tradeDTO);
-        validation.throwifNotValid();
-
-        validateTradeCreation(tradeDTO);
+        // Validate cross legs rules
+        ValidationResult tradeCrossLegValidation = tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs());
+        tradeCrossLegValidation.throwifNotValid();
 
         // Create trade entity
         Trade trade = mapDTOToEntity(tradeDTO);
@@ -215,8 +222,11 @@ public class TradeService {
         // Populate reference data
         populateReferenceDataByName(trade, tradeDTO);
 
-        // Ensure we have essential reference data
+        // Validates reference data
         validateReferenceData(trade);
+
+        // Checks reference data is active
+        entityIsActive(trade);
 
         Trade savedTrade = tradeRepository.save(trade);
 
@@ -459,14 +469,6 @@ public class TradeService {
         return tradeRepository.save(trade);
     }
 
-    private void validateTradeCreation(TradeDTO tradeDTO) {
-
-        // Validate trade has exactly 2 legs
-        if (tradeDTO.getTradeLegs() == null || tradeDTO.getTradeLegs().size() != 2) {
-            throw new RuntimeException("Trade must have exactly 2 legs");
-        }
-    }
-
     private Trade mapDTOToEntity(TradeDTO dto) {
         Trade trade = new Trade();
         trade.setTradeId(dto.getTradeId());
@@ -685,19 +687,127 @@ public class TradeService {
         return BigDecimal.ZERO;
     }
 
+    // Entity Status Validation - All reference data must exist and be valid
     private void validateReferenceData(Trade trade) {
-        // Validate essential reference data is populated
-        if (trade.getBook() == null) {
-            throw new RuntimeException("Book not found or not set");
+
+        Book book = trade.getBook();
+        Counterparty counterparty = trade.getCounterparty();
+        TradeStatus tradeStatus = trade.getTradeStatus();
+        TradeType tradeType = trade.getTradeType();
+        TradeSubType tradeSubType = trade.getTradeSubType();
+        ApplicationUser inputterUser = trade.getTradeInputterUser();
+        ApplicationUser traderUser = trade.getTraderUser();
+
+        // Essential Reference Data
+
+        // Book Reference - exists?
+        if (book.getId() != null) {
+            bookRepository.findById(book.getId())
+                    .orElseThrow(() -> new BookNotFoundException("Book not found by id"));
+        } else if (book.getBookName() != null) {
+            bookRepository.findByBookName(book.getBookName())
+                    .orElseThrow(() -> new BookNotFoundException("Book not found by bookname"));
         }
-        if (trade.getCounterparty() == null) {
-            throw new RuntimeException("Counterparty not found or not set");
+
+        // Counterparty Reference - exists?
+        if (counterparty.getId() != null) {
+            counterpartyRepository.findById(counterparty.getId())
+                    .orElseThrow(() -> new CounterpartyNotFoundException("Counterparty not found by id"));
+        } else if (counterparty.getName() != null) {
+            counterpartyRepository.findByName(counterparty.getName())
+                    .orElseThrow(() -> new CounterpartyNotFoundException("Counterparty not found by bookname"));
         }
-        if (trade.getTradeStatus() == null) {
-            throw new RuntimeException("Trade status not found or not set");
+
+        // Trade Status Reference - exists?
+        if (tradeStatus.getId() != null) {
+            tradeStatusRepository.findById(tradeStatus.getId())
+                    .orElseThrow(() -> new TradeStatusNotFoundException("TradeStatus not found by id"));
+
+        } else if (tradeStatus.getTradeStatus() != null) {
+            tradeStatusRepository.findByTradeStatus(tradeStatus.getTradeStatus())
+                    .orElseThrow(() -> new TradeStatusNotFoundException("TradeStatus not found by status"));
+        }
+
+        // User Reference Data
+
+        // Inputter User Reference - exists?
+        if (inputterUser.getId() != null) {
+            applicationUserRepository.findById(inputterUser
+                    .getId())
+                    .orElseThrow(() -> new UserNotFoundException("InputterUser not found by id"));
+
+        } else if (inputterUser.getFirstName() != null) {
+            applicationUserRepository.findByFirstName(inputterUser
+                    .getFirstName())
+                    .orElseThrow(() -> new UserNotFoundException("InputterUser not found by firstname"));
+        }
+
+        // Trader User Reference - exists?
+        if (traderUser.getId() != null) {
+            applicationUserRepository.findById(traderUser
+                    .getId())
+                    .orElseThrow(() -> new UserNotFoundException("TraderUser not found by id"));
+
+        } else if (traderUser.getFirstName() != null) {
+            applicationUserRepository.findByFirstName(traderUser
+                    .getFirstName())
+                    .orElseThrow(() -> new UserNotFoundException("TraderUser not found by firstname"));
+        }
+
+        // Trade Type Reference Data
+
+        // Trade Type Reference - exists?
+        if (tradeType.getId() != null) {
+            tradeTypeRepository.findById(tradeType.getId())
+                    .orElseThrow(() -> new TradeTypeNotFoundException("Trade type not found by id"));
+
+        } else if (tradeType.getTradeType() != null) {
+            tradeTypeRepository.findByTradeType(tradeType.getTradeType())
+                    .orElseThrow(() -> new TradeTypeNotFoundException("Trade type not found by trade type"));
+        }
+
+        // Trade Sub Type Reference - exists?
+        if (tradeSubType.getId() != null) {
+            tradeSubTypeRepository.findById(tradeSubType.getId())
+                    .orElseThrow(() -> new TradeSubTypeNotFoundException("Trade Sub type not found by id"));
+
+        } else if (tradeSubType.getTradeSubType() != null) {
+            tradeSubTypeRepository.findByTradeSubType(tradeType.getTradeType())
+                    .orElseThrow(() -> new TradeSubTypeNotFoundException("Trade Sub type not found by trade type"));
         }
 
         logger.debug("Reference data validation passed for trade");
+
+    }
+
+    // Entity Status Validation - User, book and counterparty must be active
+    private void entityIsActive(Trade trade) {
+
+        Book book = trade.getBook();
+        Counterparty counterparty = trade.getCounterparty();
+        ApplicationUser inputterUser = trade.getTradeInputterUser();
+        ApplicationUser traderUser = trade.getTraderUser();
+
+        // Book Reference - active?
+        if (!book.isActive()) {
+            throw new ValidationException("Book must be active");
+        }
+
+        // Counterparty Reference - active?
+        if (!counterparty.isActive()) {
+            throw new ValidationException("Counterparty must be active");
+        }
+
+        // User Reference (Inputter User) - active?
+        if (!inputterUser.isActive()) {
+            throw new ValidationException("InputterUser must be active");
+        }
+
+        // User Reference (Trader User) - active?
+        if (!traderUser.isActive()) {
+            throw new ValidationException("InputterUser must be active");
+        }
+
     }
 
     // NEW METHOD: Generate the next trade ID (sequential)

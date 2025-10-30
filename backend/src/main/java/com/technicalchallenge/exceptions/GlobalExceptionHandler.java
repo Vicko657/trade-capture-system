@@ -44,4 +44,49 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
+    // Handles Book not found
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(BookNotFoundException.class)
+    public ResponseEntity<String> handleBookNotFound(
+            BookNotFoundException e) {
+
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    // Handles Counterparty not found
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(CounterpartyNotFoundException.class)
+    public ResponseEntity<String> handleCounterpartyNotFound(
+            CounterpartyNotFoundException e) {
+
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    // Handles TradeStatus not found
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(TradeStatusNotFoundException.class)
+    public ResponseEntity<String> handleTradeStatusNotFound(
+            TradeStatusNotFoundException e) {
+
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    // Handles TradeType not found
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(TradeTypeNotFoundException.class)
+    public ResponseEntity<String> handleTradeTypeNotFound(
+            TradeTypeNotFoundException e) {
+
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    // Handles TradeSubType not found
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(TradeSubTypeNotFoundException.class)
+    public ResponseEntity<String> handleTradeSubTypeNotFound(
+            TradeSubTypeNotFoundException e) {
+
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
 }
