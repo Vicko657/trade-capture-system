@@ -4,26 +4,50 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.service.ApplicationUserService;
+import com.technicalchallenge.service.BookService;
+import com.technicalchallenge.service.CounterpartyService;
+import com.technicalchallenge.service.TradeStatusService;
+import com.technicalchallenge.service.TradeTypeService;
 
 @Component
 public class TradeValidator {
 
-    public List<String> errors = new ArrayList<>();
+    private static final Logger logger = LoggerFactory.getLogger(TradeValidator.class);
+
+    @Autowired
+    private BookService bookService;
+    @Autowired
+    private CounterpartyService counterpartyService;
+    @Autowired
+    private ApplicationUserService applicationUserService;
+    @Autowired
+    private TradeStatusService tradeStatusService;
+    @Autowired
+    private TradeTypeService tradeTypeService;
 
     // Validation for Trade Business Rules
     public ValidationResult validateTradeBusinessRules(TradeDTO tradeDTO) {
+
+        List<String> errors = new ArrayList<>();
+
+        // Entity Status Validation - All Reference Data must exist and be valid
+        validateAllReferenceData(tradeDTO);
+
+        // Date Validation Rules
 
         LocalDate maturityDate = tradeDTO.getTradeMaturityDate();
         LocalDate startDate = tradeDTO.getTradeStartDate();
         LocalDate tradeDate = tradeDTO.getTradeDate();
         LocalDate currentDate = LocalDate.now();
         LocalDate executionDate = tradeDTO.getTradeExecutionDate();
-
-        // Date Validation Rules
 
         // Trade Business rule - Maturity date cannot be before start date or trade date
         if (maturityDate.isBefore(startDate)) {
@@ -52,8 +76,91 @@ public class TradeValidator {
 
     }
 
+    // Entity Status Validation
+    private void validateAllReferenceData(TradeDTO tradeDTO) {
+
+        // User, book and counterparty must be active, exist and be valid
+
+        // Book Reference Data
+        validateBookReference(tradeDTO);
+
+        // Counterparty Reference Data
+        validateCounterpartyReference(tradeDTO);
+
+        // User Reference Data
+        validateTraderUserReference(tradeDTO);
+        validateInputterUserReference(tradeDTO);
+
+        // All reference data must exist and be valid
+
+        // Trade Status Reference
+        validateTradeStatusReference(tradeDTO);
+
+        // Trade Type & Sub Type Reference Data
+        validateTradeTypeReference(tradeDTO);
+
+        logger.debug("Reference data validation passed for trade");
+
+    }
+
+    private void validateBookReference(TradeDTO tradeDTO) {
+
+        Long bookId = tradeDTO.getBookId();
+        String bookName = tradeDTO.getBookName();
+
+        bookService.validateBook(bookId, bookName);
+
+    }
+
+    private void validateCounterpartyReference(TradeDTO tradeDTO) {
+
+        Long counterpartyId = tradeDTO.getCounterpartyId();
+        String counterpartyName = tradeDTO.getCounterpartyName();
+
+        counterpartyService.validateCounterparty(counterpartyId, counterpartyName);
+    }
+
+    private void validateTraderUserReference(TradeDTO tradeDTO) {
+
+        Long userId = tradeDTO.getTraderUserId();
+        String userName = tradeDTO.getTraderUserName();
+
+        applicationUserService.validateUser(userId, userName);
+
+    }
+
+    private void validateInputterUserReference(TradeDTO tradeDTO) {
+
+        Long userId = tradeDTO.getTradeInputterUserId();
+        String userName = tradeDTO.getInputterUserName();
+
+        applicationUserService.validateUser(userId, userName);
+
+    }
+
+    private void validateTradeStatusReference(TradeDTO tradeDTO) {
+
+        Long tradeStatusId = tradeDTO.getTradeStatusId();
+        tradeStatusService.validateTradeStatus(tradeStatusId);
+
+    }
+
+    private void validateTradeTypeReference(TradeDTO tradeDTO) {
+
+        Long tradeTypeId = tradeDTO.getTradeTypeId();
+        String tradeType = tradeDTO.getTradeSubType();
+        Long tradeSubTypeId = tradeDTO.getTradeSubTypeId();
+        String tradeSubType = tradeDTO.getTradeSubType();
+
+        tradeTypeService.validateTradeType(tradeTypeId, tradeType);
+        tradeTypeService.validateTradeSubType(tradeSubTypeId, tradeSubType);
+
+    }
+
     // Validation for TradeLeg Consisitency Business Rules
     public ValidationResult validateTradeLegConsistency(List<TradeLegDTO> legs) {
+
+        List<String> errors = new ArrayList<>();
 
         // Trade legs (1st & 2nd)
         TradeLegDTO leg1 = legs.get(0);

@@ -1,9 +1,10 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.InActiveException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.repository.ApplicationUserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -34,6 +35,28 @@ public class ApplicationUserService {
         return applicationUserRepository.findById(id);
     }
 
+    public Optional<ApplicationUser> getUserByUserName(String userName) {
+        logger.debug("Retrieving user by userName: {}", userName);
+        return applicationUserRepository.findByFirstName(userName);
+    }
+
+    public void validateUser(Long id, String userName) {
+        ApplicationUser user = null;
+
+        if (id != null && userName != null) {
+            if (getUserById(id).isEmpty()) {
+                throw new EntityNotFoundException("User not found by id");
+            } else if (getUserByUserName(userName).isEmpty()) {
+                throw new EntityNotFoundException("User not found by firstName");
+            }
+            user = getUserById(id).get();
+        }
+        if (!user.isActive()) {
+            throw new InActiveException("User must be active");
+        }
+
+    }
+
     public Optional<ApplicationUser> getUserByLoginId(String loginId) {
         logger.debug("Retrieving user by login id: {}", loginId);
         return applicationUserRepository.findByLoginId(loginId);
@@ -52,7 +75,7 @@ public class ApplicationUserService {
     public ApplicationUser updateUser(Long id, ApplicationUser user) {
         logger.info("Updating user with id: {}", id);
         ApplicationUser existingUser = applicationUserRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         // Update fields
         existingUser.setFirstName(user.getFirstName());
         existingUser.setLastName(user.getLastName());

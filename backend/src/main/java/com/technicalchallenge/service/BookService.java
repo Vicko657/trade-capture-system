@@ -1,12 +1,13 @@
 package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.BookDTO;
+import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.InActiveException;
 import com.technicalchallenge.mapper.BookMapper;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.repository.BookRepository;
 import com.technicalchallenge.repository.CostCenterRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -19,7 +20,6 @@ import java.util.Optional;
 @AllArgsConstructor
 public class BookService {
     private static final Logger logger = LoggerFactory.getLogger(BookService.class);
-
 
     private final BookRepository bookRepository;
     private final CostCenterRepository costCenterRepository;
@@ -37,12 +37,34 @@ public class BookService {
         return bookRepository.findById(id).map(bookMapper::toDto);
     }
 
+    public Optional<BookDTO> getBookByBookName(String bookName) {
+        logger.debug("Retrieving book by id: {}", bookName);
+        return bookRepository.findByBookName(bookName).map(bookMapper::toDto);
+    }
+
+    public void validateBook(Long id, String bookName) {
+        BookDTO book = null;
+        if (id != null && bookName != null) {
+            if (getBookById(id).isEmpty()) {
+                throw new EntityNotFoundException("Book not found by id");
+            } else if (getBookByBookName(bookName).isEmpty()) {
+                throw new EntityNotFoundException("Book not found by bookname");
+            }
+            book = getBookById(id).get();
+        }
+        if (!book.isActive()) {
+            throw new InActiveException("Book must be active");
+        }
+
+    }
+
     public void populateReferenceDataByName(Book book, BookDTO dto) {
         if (dto.getCostCenterName() != null && !dto.getCostCenterName().isBlank()) {
             var costCenter = costCenterRepository.findAll().stream()
-                .filter(c -> c.getCostCenterName().equalsIgnoreCase(dto.getCostCenterName()))
-                .findFirst().orElse(null);
-            if (costCenter == null) throw new IllegalArgumentException("CostCenter '" + dto.getCostCenterName() + "' does not exist");
+                    .filter(c -> c.getCostCenterName().equalsIgnoreCase(dto.getCostCenterName()))
+                    .findFirst().orElse(null);
+            if (costCenter == null)
+                throw new IllegalArgumentException("CostCenter '" + dto.getCostCenterName() + "' does not exist");
             book.setCostCenter(costCenter);
         }
         // If costCenterName is null or blank, do not modify the current costCenter
