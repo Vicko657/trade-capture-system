@@ -196,6 +196,10 @@ public class TradeService {
         ValidationResult tradeBusinessValidation = tradeValidator.validateTradeBusinessRules(tradeDTO);
         tradeBusinessValidation.throwifNotValid();
 
+        // Validate cross legs rules
+        ValidationResult tradeCrossLegValidation = tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs());
+        tradeCrossLegValidation.throwifNotValid();
+
         // Create trade entity
         Trade trade = mapDTOToEntity(tradeDTO);
         trade.setVersion(1);
@@ -478,11 +482,6 @@ public class TradeService {
 
             // Populate reference data for leg
             populateLegReferenceData(tradeLeg, legDTO);
-
-            // Validate cross legs rules
-            ValidationResult tradeCrossLegValidation = tradeValidator
-                    .validateTradeLegConsistency(tradeDTO.getTradeLegs());
-            tradeCrossLegValidation.throwifNotValid();
 
             TradeLeg savedLeg = tradeLegRepository.save(tradeLeg);
 
