@@ -9,8 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.exceptions.InvalidSearchException;
 import com.technicalchallenge.service.ApplicationUserService;
 import com.technicalchallenge.service.BookService;
 import com.technicalchallenge.service.BusinessDayConventionService;
@@ -214,6 +216,22 @@ public class TradeValidator {
         }
 
         return ValidationResult.isNotValid(errors);
+
+    }
+
+    public void validateSearch(SearchTradeByCriteria searchTradeByCriteria) {
+        // Validate date range for tradeDate
+        if (searchTradeByCriteria.tradeStartDate() != null && searchTradeByCriteria.tradeEndDate() != null
+                && searchTradeByCriteria.tradeEndDate().isBefore(searchTradeByCriteria.tradeStartDate())) {
+            throw new InvalidSearchException("End date cannot be before start date");
+        }
+    }
+
+    public void validateRSQLSearch(String query) {
+        // Validate query - if the query is null or missing the exception is thrown
+        if (query == null || query.isEmpty()) {
+            throw new InvalidSearchException("Query must not be null or empty");
+        }
 
     }
 

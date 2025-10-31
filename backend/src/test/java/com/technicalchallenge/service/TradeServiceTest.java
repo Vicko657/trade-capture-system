@@ -5,8 +5,7 @@ import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
-import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
+import com.technicalchallenge.exceptions.InvalidSearchException;
 import com.technicalchallenge.exceptions.ValidationException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
@@ -590,8 +589,8 @@ class TradeServiceTest {
 
         // When - A InvalidSearchCriteriaException is thrown and assertThrows returns
         // the exception
-        InvalidSearchCriteriaException invalidSearchCriteriaException = assertThrows(
-                InvalidSearchCriteriaException.class,
+        InvalidSearchException invalidSearchCriteriaException = assertThrows(
+                InvalidSearchException.class,
                 () -> {
                     tradeService.getAllTradesByCriteria(criteriaSearch);
                 });
@@ -650,14 +649,14 @@ class TradeServiceTest {
 
         // When - A InvalidRsqlQueryException is thrown and assertThrows returns
         // the exception
-        InvalidRsqlQueryException invalidRsqlQueryException = assertThrows(
-                InvalidRsqlQueryException.class,
+        InvalidSearchException invalidSearchException = assertThrows(
+                InvalidSearchException.class,
                 () -> {
                     tradeService.getAllTradesByRSQL(query);
                 });
 
         // Then - Verifies the exception was thrown.
-        assertEquals("Query must not be null or empty", invalidRsqlQueryException.getMessage());
+        assertEquals("Query must not be null or empty", invalidSearchException.getMessage());
     }
 
     /**
