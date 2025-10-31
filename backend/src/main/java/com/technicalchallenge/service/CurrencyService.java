@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.repository.CurrencyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,24 @@ public class CurrencyService {
     public Optional<Currency> findById(Long id) {
         logger.debug("Retrieving currency by id: {}", id);
         return currencyRepository.findById(id);
+    }
+
+    public Optional<Currency> findByCurrency(String currency) {
+        logger.debug("Retrieving currency by currency: {}", currency);
+        return currencyRepository.findByCurrency(currency);
+    }
+
+    public void validateCurrency(Long id, String currency) {
+
+        if (id != null && currency != null) {
+
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("Currency not found by id");
+            } else if (findByCurrency(currency).isEmpty()) {
+                throw new EntityNotFoundException("Currency not found by currency");
+            }
+        }
+
     }
 
     public Currency save(Currency currency) {

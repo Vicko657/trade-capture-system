@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.repository.ScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,24 @@ public class ScheduleService {
     public Optional<Schedule> findById(Long id) {
         logger.debug("Retrieving schedule by id: {}", id);
         return scheduleRepository.findById(id);
+    }
+
+    public Optional<Schedule> findBySchedule(String schduele) {
+        logger.debug("Retrieving schedule by schedule: {}", schduele);
+        return scheduleRepository.findBySchedule(schduele);
+    }
+
+    public void validateSchedule(Long id, String schedule) {
+
+        if (id != null && schedule != null) {
+
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("Schedule not found by id");
+            } else if (findBySchedule(schedule).isEmpty()) {
+                throw new EntityNotFoundException("Schedule not found by schedule");
+            }
+        }
+
     }
 
     public Schedule save(Schedule schedule) {

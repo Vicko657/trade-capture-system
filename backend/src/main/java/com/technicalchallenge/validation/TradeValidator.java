@@ -13,7 +13,14 @@ import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.service.ApplicationUserService;
 import com.technicalchallenge.service.BookService;
+import com.technicalchallenge.service.BusinessDayConventionService;
 import com.technicalchallenge.service.CounterpartyService;
+import com.technicalchallenge.service.CurrencyService;
+import com.technicalchallenge.service.HolidayCalendarService;
+import com.technicalchallenge.service.IndexService;
+import com.technicalchallenge.service.LegTypeService;
+import com.technicalchallenge.service.PayRecService;
+import com.technicalchallenge.service.ScheduleService;
 import com.technicalchallenge.service.TradeStatusService;
 import com.technicalchallenge.service.TradeTypeService;
 
@@ -32,6 +39,20 @@ public class TradeValidator {
     private TradeStatusService tradeStatusService;
     @Autowired
     private TradeTypeService tradeTypeService;
+    @Autowired
+    private CurrencyService currencyService;
+    @Autowired
+    private PayRecService payRecService;
+    @Autowired
+    private ScheduleService scheduleService;
+    @Autowired
+    private LegTypeService legTypeService;
+    @Autowired
+    private HolidayCalendarService holidayCalendarService;
+    @Autowired
+    private IndexService indexService;
+    @Autowired
+    private BusinessDayConventionService businessDayConventionService;
 
     // Validation for Trade Business Rules
     public ValidationResult validateTradeBusinessRules(TradeDTO tradeDTO) {
@@ -81,28 +102,19 @@ public class TradeValidator {
 
         // User, book and counterparty must be active, exist and be valid
 
-        // Book Reference Data
         validateBookReference(tradeDTO);
-
-        // Counterparty Reference Data
         validateCounterpartyReference(tradeDTO);
-
-        // User Reference Data
-        validateTraderUserReference(tradeDTO);
-        validateInputterUserReference(tradeDTO);
+        validateUserReference(tradeDTO);
 
         // All reference data must exist and be valid
-
-        // Trade Status Reference
         validateTradeStatusReference(tradeDTO);
-
-        // Trade Type & Sub Type Reference Data
         validateTradeTypeReference(tradeDTO);
 
         logger.debug("Reference data validation passed for trade");
 
     }
 
+    // Book Validation
     private void validateBookReference(TradeDTO tradeDTO) {
 
         Long bookId = tradeDTO.getBookId();
@@ -112,6 +124,7 @@ public class TradeValidator {
 
     }
 
+    // Counterparty Validation
     private void validateCounterpartyReference(TradeDTO tradeDTO) {
 
         Long counterpartyId = tradeDTO.getCounterpartyId();
@@ -120,24 +133,20 @@ public class TradeValidator {
         counterpartyService.validateCounterparty(counterpartyId, counterpartyName);
     }
 
-    private void validateTraderUserReference(TradeDTO tradeDTO) {
+    // User Validation - TraderUser & Inputter User
+    private void validateUserReference(TradeDTO tradeDTO) {
 
-        Long userId = tradeDTO.getTraderUserId();
-        String userName = tradeDTO.getTraderUserName();
+        Long traderUserId = tradeDTO.getTraderUserId();
+        String traderUserName = tradeDTO.getTraderUserName();
+        Long inputterUserId = tradeDTO.getTradeInputterUserId();
+        String inputterUserName = tradeDTO.getInputterUserName();
 
-        applicationUserService.validateUser(userId, userName);
-
-    }
-
-    private void validateInputterUserReference(TradeDTO tradeDTO) {
-
-        Long userId = tradeDTO.getTradeInputterUserId();
-        String userName = tradeDTO.getInputterUserName();
-
-        applicationUserService.validateUser(userId, userName);
+        applicationUserService.validateUser(traderUserId, traderUserName);
+        applicationUserService.validateUser(inputterUserId, inputterUserName);
 
     }
 
+    // TradeStatus Validation
     private void validateTradeStatusReference(TradeDTO tradeDTO) {
 
         Long tradeStatusId = tradeDTO.getTradeStatusId();
@@ -145,6 +154,7 @@ public class TradeValidator {
 
     }
 
+    // TradeType Validation
     private void validateTradeTypeReference(TradeDTO tradeDTO) {
 
         Long tradeTypeId = tradeDTO.getTradeTypeId();
@@ -171,19 +181,12 @@ public class TradeValidator {
         String indexName;
         Double rate;
 
-        // Cross-Leg Business Rules
-
-        // TradeLeg Business rule - Legs must have opposite pay/receive flags
-        if (leg1.getPayRecId() == leg2.getPayRecId()) {
-            errors.add("Legs must have opposite pay/receive flags");
-
-        } else if (leg1.getPayReceiveFlag() == leg2.getPayReceiveFlag()) {
-            errors.add("Legs must have opposite pay/receive flags");
-        }
-
         // TradeLeg Business rule - Floating legs must have an index specified and Fixed
         // legs must have a valid rate
         for (TradeLegDTO tradeleg : legs) {
+
+            // Cross Leg Reference Data must exist and be valid
+            validateCrossLegReferenceData(tradeleg);
 
             legType = tradeleg.getLegType();
             indexId = tradeleg.getIndexId();
@@ -201,7 +204,103 @@ public class TradeValidator {
             }
 
         }
+
+        // TradeLeg Business rule - Legs must have opposite pay/receive flags
+        if (leg1.getPayRecId() == leg2.getPayRecId()) {
+            errors.add("Legs must have opposite pay/receive flags");
+
+        } else if (leg1.getPayReceiveFlag() == leg2.getPayReceiveFlag()) {
+            errors.add("Legs must have opposite pay/receive flags");
+        }
+
         return ValidationResult.isNotValid(errors);
 
     }
+
+    // Entity Status Validation - Cross Leg
+    private void validateCrossLegReferenceData(TradeLegDTO tradeLegDTO) {
+
+        validateCurrencyReference(tradeLegDTO);
+        validatePayRecReference(tradeLegDTO);
+        validateScheduleReference(tradeLegDTO);
+        validateLegTypeReference(tradeLegDTO);
+        validateIndexReference(tradeLegDTO);
+        validateHolidayCalendarReference(tradeLegDTO);
+        validateBusinessDayConventionReference(tradeLegDTO);
+
+    }
+
+    // Currency Validation
+    private void validateCurrencyReference(TradeLegDTO tradeLegDTO) {
+
+        Long currencyId = tradeLegDTO.getCurrencyId();
+        String currency = tradeLegDTO.getCurrency();
+
+        currencyService.validateCurrency(currencyId, currency);
+
+    }
+
+    // Pay Rec Validation
+    private void validatePayRecReference(TradeLegDTO tradeLegDTO) {
+
+        Long payRecId = tradeLegDTO.getPayRecId();
+        String payRec = tradeLegDTO.getPayReceiveFlag();
+
+        payRecService.validatePayRec(payRecId, payRec);
+
+    }
+
+    // Schedule Validation
+    private void validateScheduleReference(TradeLegDTO tradeLegDTO) {
+
+        Long scheduleId = tradeLegDTO.getScheduleId();
+        String schedule = tradeLegDTO.getCalculationPeriodSchedule();
+
+        scheduleService.validateSchedule(scheduleId, schedule);
+
+    }
+
+    // LegType Validation
+    private void validateLegTypeReference(TradeLegDTO tradeLegDTO) {
+
+        Long legTypeId = tradeLegDTO.getLegTypeId();
+        String type = tradeLegDTO.getLegType();
+
+        legTypeService.validateLegType(legTypeId, type);
+
+    }
+
+    // Index Validation
+    private void validateIndexReference(TradeLegDTO tradeLegDTO) {
+
+        Long indexId = tradeLegDTO.getIndexId();
+        String index = tradeLegDTO.getIndexName();
+
+        indexService.validateIndex(indexId, index);
+
+    }
+
+    // HolidayCalendar Validation
+    private void validateHolidayCalendarReference(TradeLegDTO tradeLegDTO) {
+
+        Long holidayCalendarId = tradeLegDTO.getHolidayCalendarId();
+        String holidayCalendar = tradeLegDTO.getHolidayCalendar();
+
+        holidayCalendarService.validateHolidayCalendar(holidayCalendarId, holidayCalendar);
+
+    }
+
+    // BDC Validation - Fixing & Payment
+    private void validateBusinessDayConventionReference(TradeLegDTO tradeLegDTO) {
+
+        Long fixingBDCId = tradeLegDTO.getFixingBdcId();
+        String fixingBdc = tradeLegDTO.getFixingBusinessDayConvention();
+        Long paymentBDCId = tradeLegDTO.getPaymentBdcId();
+        String paymentBDC = tradeLegDTO.getPaymentBusinessDayConvention();
+
+        businessDayConventionService.validateBusinessDayConvention(fixingBDCId, fixingBdc);
+        businessDayConventionService.validateBusinessDayConvention(paymentBDCId, paymentBDC);
+
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.PayRec;
 import com.technicalchallenge.repository.PayRecRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,24 @@ public class PayRecService {
     public Optional<PayRec> findById(Long id) {
         logger.debug("Retrieving pay rec by id: {}", id);
         return payRecRepository.findById(id);
+    }
+
+    public Optional<PayRec> findByPayRec(String payRec) {
+        logger.debug("Retrieving pay rec by pay/rec: {}", payRec);
+        return payRecRepository.findByPayRec(payRec);
+    }
+
+    public void validatePayRec(Long id, String payRec) {
+
+        if (id != null && payRec != null) {
+
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("PayRec not found by id");
+            } else if (findByPayRec(payRec).isEmpty()) {
+                throw new EntityNotFoundException("PayRec not found by pay/rec");
+            }
+        }
+
     }
 
     public PayRec save(PayRec payRec) {

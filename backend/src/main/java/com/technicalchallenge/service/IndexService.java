@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.Index;
 import com.technicalchallenge.repository.IndexRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,24 @@ public class IndexService {
     public Optional<Index> findById(Long id) {
         logger.debug("Retrieving index by id: {}", id);
         return indexRepository.findById(id);
+    }
+
+    public Optional<Index> findByIndex(String index) {
+        logger.debug("Retrieving index by index: {}", index);
+        return indexRepository.findByIndex(index);
+    }
+
+    public void validateIndex(Long id, String index) {
+
+        if (id != null && index != null) {
+
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("Index not found by id");
+            } else if (findByIndex(index).isEmpty()) {
+                throw new EntityNotFoundException("Index not found by index");
+            }
+        }
+
     }
 
     public Index save(Index index) {

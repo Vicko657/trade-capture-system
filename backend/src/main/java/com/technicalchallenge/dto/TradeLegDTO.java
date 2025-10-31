@@ -25,11 +25,15 @@ public class TradeLegDTO {
     private Double rate;
 
     // Currency reference
+    @NotNull(message = "Currency id is required")
     private Long currencyId;
+    @NotNull(message = "Currency is required")
     private String currency;
 
     // Leg type reference
+    @NotNull(message = "legType id is required")
     private Long legTypeId;
+    @NotNull(message = "legType is required")
     private String legType;
 
     // Index reference (for floating legs)
@@ -38,21 +42,31 @@ public class TradeLegDTO {
     private String indexName;
 
     // Holiday calendar reference
+    @NotNull(message = "HolidayCalendar id is required")
     private Long holidayCalendarId;
+    @NotNull(message = "HolidayCalendar is required")
     private String holidayCalendar;
 
     // Schedule reference
+    @NotNull(message = "Schedule id is required")
     private Long scheduleId;
+    @NotNull(message = "Calculation Period Schedule is required")
     private String calculationPeriodSchedule;
 
     // Business day convention references
+    @NotNull(message = "PaymentBusinessDayConvention id is required")
     private Long paymentBdcId;
+    @NotNull(message = "PaymentBusinessDayConvention is required")
     private String paymentBusinessDayConvention;
+    @NotNull(message = "FixingBusinessDayConvention id is required")
     private Long fixingBdcId;
+    @NotNull(message = "FixingBusinessDayConvention is required")
     private String fixingBusinessDayConvention;
 
     // Pay/Receive reference
+    @NotNull(message = "PayRec id is required")
     private Long payRecId;
+    @NotNull(message = "PayRecFlag is required")
     private String payReceiveFlag;
 
     // Associated cashflows
