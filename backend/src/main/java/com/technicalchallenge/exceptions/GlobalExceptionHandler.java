@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     // Handles @Valid @Validated Errors
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleFieldValidationErrors(
+    public ResponseEntity<ErrorResponse> handleFieldValidationErrors(
             MethodArgumentNotValidException e, HttpServletRequest request) {
 
         List<String> validationResult = new ArrayList<>();
@@ -29,64 +29,53 @@ public class GlobalExceptionHandler {
             validationResult.add(message);
         });
 
-        return ResponseEntity.badRequest().body(validationResult);
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "Field Error Exception",
+                validationResult, null,
+                LocalDateTime.now(), request.getRequestURI());
+
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     // Handles Business Validation Errors
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleBusinessValidationErrors(
-            ValidationException e) {
+            ValidationException e, HttpServletRequest request) {
 
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getErrors(),
-                LocalDateTime.now());
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "Validation Exception", e.getErrors(), null,
+                LocalDateTime.now(), request.getRequestURI());
 
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    // Handles Book not found
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(BookNotFoundException.class)
-    public ResponseEntity<String> handleBookNotFound(
-            BookNotFoundException e) {
+    // Handles Entities not found
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFound(
+            EntityNotFoundException e, HttpServletRequest request) {
 
-        return ResponseEntity.badRequest().body(e.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.NOT_FOUND.value(), "Not Found",
+                "Entity Not Found Exception",
+                null, e
+                        .getMessage(),
+                LocalDateTime.now(), request.getRequestURI());
+
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    // Handles Counterparty not found
+    // Handles Entities not active
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(CounterpartyNotFoundException.class)
-    public ResponseEntity<String> handleCounterpartyNotFound(
-            CounterpartyNotFoundException e) {
+    @ExceptionHandler(InActiveException.class)
+    public ResponseEntity<ErrorResponse> handleInActiveEntity(
+            InActiveException e, HttpServletRequest request) {
 
-        return ResponseEntity.badRequest().body(e.getMessage());
-    }
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "InActive Exception", e.getErrors(), null,
+                LocalDateTime.now(), request.getRequestURI());
 
-    // Handles TradeStatus not found
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(TradeStatusNotFoundException.class)
-    public ResponseEntity<String> handleTradeStatusNotFound(
-            TradeStatusNotFoundException e) {
-
-        return ResponseEntity.badRequest().body(e.getMessage());
-    }
-
-    // Handles TradeType not found
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(TradeTypeNotFoundException.class)
-    public ResponseEntity<String> handleTradeTypeNotFound(
-            TradeTypeNotFoundException e) {
-
-        return ResponseEntity.badRequest().body(e.getMessage());
-    }
-
-    // Handles TradeSubType not found
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(TradeSubTypeNotFoundException.class)
-    public ResponseEntity<String> handleTradeSubTypeNotFound(
-            TradeSubTypeNotFoundException e) {
-
-        return ResponseEntity.badRequest().body(e.getMessage());
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
 }
