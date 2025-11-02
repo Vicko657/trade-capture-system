@@ -3,6 +3,8 @@ package com.technicalchallenge.service;
 import lombok.AllArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.technicalchallenge.dto.TradeDTO;
@@ -10,6 +12,7 @@ import com.technicalchallenge.exceptions.InActiveException;
 import com.technicalchallenge.exceptions.UnauthorizedAccessException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.UserType;
+import com.technicalchallenge.security.ApplicationUserDetails;
 
 @Service
 @AllArgsConstructor
@@ -54,5 +57,13 @@ public class AuthorizationService {
 
         return hasOperations;
 
+    }
+
+    // Gets the current user login id
+    public Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        ApplicationUserDetails userDetails = (ApplicationUserDetails) auth.getPrincipal();
+
+        return userDetails.getId();
     }
 }

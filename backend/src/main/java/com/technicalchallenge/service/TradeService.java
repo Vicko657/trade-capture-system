@@ -83,7 +83,7 @@ public class TradeService {
     public List<Trade> getAllTrades() {
         logger.info("Retrieving all trades");
 
-        Long userId = 1001L; // default
+        Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
 
         return tradeRepository.findAll();
@@ -93,7 +93,7 @@ public class TradeService {
     public Trade getTradeById(Long tradeId) {
         logger.debug("Retrieving trade by id: {}", tradeId);
 
-        Long userId = 1001L; // default
+        Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
 
         return tradeRepository.findByTradeIdAndActiveTrue(tradeId)
@@ -106,7 +106,7 @@ public class TradeService {
         logger.info("Creating new trade with ID: {}", tradeDTO.getTradeId());
 
         // Validates User - Create Trade
-        Long userId = 1001L; // default
+        Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, "CREATE_TRADE", tradeDTO);
 
         // Validate trade business rules
@@ -309,7 +309,7 @@ public class TradeService {
 
         // Validates User - Amend Trade
 
-        Long userId = 1001L;// default
+        Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, "AMEND_TRADE", tradeDTO);
 
         Trade existingTrade = getTradeById(tradeId);
@@ -352,7 +352,7 @@ public class TradeService {
 
         // Validates User - Terminate Trade
         TradeDTO tradeDTO = tradeMapper.toDto(trade);
-        Long userId = 1001L;// default
+        Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, "TERMINATE_TRADE", tradeDTO);
 
         TradeStatus terminatedStatus = tradeStatusRepository.findByTradeStatus("TERMINATED")
@@ -373,7 +373,7 @@ public class TradeService {
 
         // Validates User - Cancel Trade
         TradeDTO tradeDTO = tradeMapper.toDto(trade);
-        Long userId = 1001L;// default
+        Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, "CANCEL_TRADE", tradeDTO);
 
         TradeStatus cancelledStatus = tradeStatusRepository.findByTradeStatus("CANCELLED")
