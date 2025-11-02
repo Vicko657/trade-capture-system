@@ -6,6 +6,7 @@ import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.specification.TradeSpecification;
@@ -73,28 +74,40 @@ public class TradeService {
     private AdditionalInfoService additionalInfoService;
     @Autowired
     private TradeValidator tradeValidator;
+    @Autowired
+    private AuthorizationService authorizationService;
+
+    @Autowired
+    private TradeMapper tradeMapper;
 
     public List<Trade> getAllTrades() {
         logger.info("Retrieving all trades");
+
+        Long userId = 1001L; // default
+        authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
+
         return tradeRepository.findAll();
+
     }
 
-    public Optional<Trade> getTradeById(Long tradeId) {
+    public Trade getTradeById(Long tradeId) {
         logger.debug("Retrieving trade by id: {}", tradeId);
-        return tradeRepository.findByTradeIdAndActiveTrue(tradeId);
+
+        Long userId = 1001L; // default
+        authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
+
+        return tradeRepository.findByTradeIdAndActiveTrue(tradeId)
+                .orElseThrow(() -> new EntityNotFoundException("Trade not found:" + tradeId));
+
     }
 
     @Transactional
     public Trade createTrade(TradeDTO tradeDTO) {
         logger.info("Creating new trade with ID: {}", tradeDTO.getTradeId());
 
-        // Generate trade ID if not provided
-        if (tradeDTO.getTradeId() == null) {
-            // Generate sequential trade ID starting from 10000
-            Long generatedTradeId = generateNextTradeId();
-            tradeDTO.setTradeId(generatedTradeId);
-            logger.info("Generated trade ID: {}", generatedTradeId);
-        }
+        // Validates User - Create Trade
+        Long userId = 1001L; // default
+        authorizationService.validateUserPrivileges(userId, "CREATE_TRADE", tradeDTO);
 
         // Validate trade business rules
         ValidationResult tradeBusinessValidation = tradeValidator.validateTradeBusinessRules(tradeDTO);
@@ -103,6 +116,14 @@ public class TradeService {
         // Validate cross legs rules
         ValidationResult tradeCrossLegValidation = tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs());
         tradeCrossLegValidation.throwifNotValid();
+
+        // Generate trade ID if not provided
+        if (tradeDTO.getTradeId() == null) {
+            // Generate sequential trade ID starting from 10000
+            Long generatedTradeId = generateNextTradeId();
+            tradeDTO.setTradeId(generatedTradeId);
+            logger.info("Generated trade ID: {}", generatedTradeId);
+        }
 
         // Create trade entity
         Trade trade = mapDTOToEntity(tradeDTO);
@@ -283,14 +304,15 @@ public class TradeService {
 
     @Transactional
     public Trade amendTrade(Long tradeId, TradeDTO tradeDTO) {
+
         logger.info("Amending trade with ID: {}", tradeId);
 
-        Optional<Trade> existingTradeOpt = getTradeById(tradeId);
-        if (existingTradeOpt.isEmpty()) {
-            throw new EntityNotFoundException("Trade not found: " + tradeId);
-        }
+        // Validates User - Amend Trade
 
-        Trade existingTrade = existingTradeOpt.get();
+        Long userId = 1001L;// default
+        authorizationService.validateUserPrivileges(userId, "AMEND_TRADE", tradeDTO);
+
+        Trade existingTrade = getTradeById(tradeId);
 
         // Deactivate existing trade
         existingTrade.setActive(false);
@@ -326,12 +348,13 @@ public class TradeService {
     public Trade terminateTrade(Long tradeId) {
         logger.info("Terminating trade with ID: {}", tradeId);
 
-        Optional<Trade> tradeOpt = getTradeById(tradeId);
-        if (tradeOpt.isEmpty()) {
-            throw new EntityNotFoundException("Trade not found: " + tradeId);
-        }
+        Trade trade = getTradeById(tradeId);
 
-        Trade trade = tradeOpt.get();
+        // Validates User - Terminate Trade
+        TradeDTO tradeDTO = tradeMapper.toDto(trade);
+        Long userId = 1001L;// default
+        authorizationService.validateUserPrivileges(userId, "TERMINATE_TRADE", tradeDTO);
+
         TradeStatus terminatedStatus = tradeStatusRepository.findByTradeStatus("TERMINATED")
                 .orElseThrow(() -> new EntityNotFoundException("TERMINATED status not found"));
 
@@ -343,14 +366,16 @@ public class TradeService {
 
     @Transactional
     public Trade cancelTrade(Long tradeId) {
+
         logger.info("Cancelling trade with ID: {}", tradeId);
 
-        Optional<Trade> tradeOpt = getTradeById(tradeId);
-        if (tradeOpt.isEmpty()) {
-            throw new EntityNotFoundException("Trade not found: " + tradeId);
-        }
+        Trade trade = getTradeById(tradeId);
 
-        Trade trade = tradeOpt.get();
+        // Validates User - Cancel Trade
+        TradeDTO tradeDTO = tradeMapper.toDto(trade);
+        Long userId = 1001L;// default
+        authorizationService.validateUserPrivileges(userId, "CANCEL_TRADE", tradeDTO);
+
         TradeStatus cancelledStatus = tradeStatusRepository.findByTradeStatus("CANCELLED")
                 .orElseThrow(() -> new EntityNotFoundException("CANCELLED status not found"));
 

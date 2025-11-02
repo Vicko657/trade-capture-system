@@ -143,9 +143,6 @@ public class TradeValidator {
         Long inputterUserId = tradeDTO.getTradeInputterUserId();
         String inputterUserName = tradeDTO.getInputterUserName();
 
-        applicationUserService.validateUser(traderUserId, traderUserName);
-        applicationUserService.validateUser(inputterUserId, inputterUserName);
-
     }
 
     // TradeStatus Validation

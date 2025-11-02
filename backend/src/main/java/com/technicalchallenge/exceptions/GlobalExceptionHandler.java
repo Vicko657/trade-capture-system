@@ -92,4 +92,18 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.badRequest().body(errorResponse);
         }
 
+        // Handles Denied Privilege Access
+        @ResponseStatus(HttpStatus.FORBIDDEN)
+        @ExceptionHandler(UnauthorizedAccessException.class)
+        public ResponseEntity<ErrorResponse> handleInValidSearch(
+                        UnauthorizedAccessException e, HttpServletRequest request) {
+
+                ErrorResponse errorResponse = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Forbidden",
+                                "Denied Access", null, e
+                                                .getMessage(),
+                                LocalDateTime.now(), request.getRequestURI());
+
+                return ResponseEntity.badRequest().body(errorResponse);
+        }
+
 }
