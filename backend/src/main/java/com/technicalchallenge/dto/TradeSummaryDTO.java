@@ -31,8 +31,9 @@ public class TradeSummaryDTO {
         private final Map<String, BigDecimal> totalNotionalByCurrency;
         private final Map<String, Long> totalCountByStatus;
 
-        // Breakdowns
-        private final List<Breakdown> byBreakdown;
+        // The Breakdowns
+        private final List<TradeTypeBreakdown> notionalByTradeType;
+        private final List<CounterpartyBreakdown> notionalByCounterparty;
 
         // Risk Exposure
         private final List<RiskExposure> riskExposure;
@@ -40,17 +41,19 @@ public class TradeSummaryDTO {
         public TradeSummaryDTO(String dashboard, String traderUsername, Long tradeCount, BigDecimal totalNotional,
                         Page<PersonalView> trades, Map<String, BigDecimal> totalNotionalByCurrency,
                         Map<String, Long> totalCountByStatus,
-                        List<Breakdown> byBreakdown,
+                        List<TradeTypeBreakdown> notionalByTradeType,
+                        List<CounterpartyBreakdown> notionalByCounterparty,
                         List<RiskExposure> riskExposure) {
 
-                this.dashBoard = dashboard;
-                this.traderUsername = traderUsername;
+                this.dashBoard = dashboard.toUpperCase();
+                this.traderUsername = traderUsername.toUpperCase();
                 this.tradeCount = tradeCount;
                 this.totalNotional = totalNotional;
                 this.trades = trades;
                 this.totalNotionalByCurrency = totalNotionalByCurrency;
                 this.totalCountByStatus = totalCountByStatus;
-                this.byBreakdown = byBreakdown;
+                this.notionalByTradeType = notionalByTradeType;
+                this.notionalByCounterparty = notionalByCounterparty;
                 this.riskExposure = riskExposure;
 
         }
@@ -65,12 +68,18 @@ public class TradeSummaryDTO {
                         Integer version) {
         }
 
-        // Flatten Version of breakdown
-        public static record Breakdown(String deskName,
-                        String subDeskName, String tradeType,
+        // Flatten Version of breakdownByTradeType
+        public static record TradeTypeBreakdown(
+                        String tradeType,
+                        BigDecimal totalNotional, BigDecimal percentage) {
+        }
+
+        // Flatten Version of breakdownByCounterparty
+        public static record CounterpartyBreakdown(
                         String counterpartyName,
-                        String currency,
-                        BigDecimal totalNotional) {
+                        BigDecimal totalNotional,
+                        BigDecimal percentage) {
+
         }
 
         // Flatten Version of riskexposure

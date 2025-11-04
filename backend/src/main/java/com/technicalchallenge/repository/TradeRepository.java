@@ -1,10 +1,11 @@
 package com.technicalchallenge.repository;
 
-import com.technicalchallenge.dto.TradeSummaryDTO;
-import com.technicalchallenge.dto.TradeSummaryDTO.Breakdown;
+import com.technicalchallenge.dto.TradeSummaryDTO.CounterpartyBreakdown;
 import com.technicalchallenge.dto.TradeSummaryDTO.PersonalView;
 import com.technicalchallenge.dto.TradeSummaryDTO.RiskExposure;
+import com.technicalchallenge.dto.TradeSummaryDTO.TradeTypeBreakdown;
 import com.technicalchallenge.model.Trade;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -58,9 +59,13 @@ public interface TradeRepository extends JpaRepository<Trade, Long>, JpaSpecific
     @Query("SELECT t FROM Trade t JOIN t.traderUser u WHERE traderUser.loginId = :username")
     List<Trade> findAllTrades(@Param("username") String username);
 
-    // Breakdown by trade type and counterparty
-    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$Breakdown(sd.desk.deskName, cc.subDesk.subdeskName, t.tradeType.tradeType, l.currency.currency, t.counterparty.name, COALESCE(SUM(l.notional),0)) FROM Trade t JOIN t.book b JOIN b.costCenter cc JOIN cc.subDesk sd JOIN t.counterparty c JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY c.name, t.tradeType.tradeType")
-    List<Breakdown> findByBreakdown(@Param("username") String username);
+    // Breakdown by trade type
+    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$TradeTypeBreakdown(t.tradeType.tradeType, SUM(l.notional), ROUND(SUM(l.notional) / SUM(SUM(l.notional)) OVER() * 100, 2)) FROM Trade t JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY t.tradeType")
+    List<TradeTypeBreakdown> findByTradeTypeBreakdown(@Param("username") String username);
+
+    // Breakdown by counterparty
+    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$CounterpartyBreakdown(t.counterparty.name, SUM(l.notional), ROUND(SUM(l.notional) / SUM(SUM(l.notional)) OVER() * 100, 2)) FROM Trade t JOIN t.counterparty c JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY c.name")
+    List<CounterpartyBreakdown> findByCounterpartyBreakdown(@Param("username") String username);
 
     // Risk Exposure by pay/rec
     @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$RiskExposure(l.legId, l.rate, sd.desk.deskName, l.currency.currency, l.payReceiveFlag.payRec, SUM(CASE WHEN l.payReceiveFlag.payRec = 'Receive' THEN l.notional ELSE -l.notional END)) FROM Trade t JOIN t.book b JOIN b.costCenter cc JOIN cc.subDesk sd JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY l.payReceiveFlag.payRec")

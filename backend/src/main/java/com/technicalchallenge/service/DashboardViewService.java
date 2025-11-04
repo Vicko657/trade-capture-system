@@ -61,7 +61,7 @@ public class DashboardViewService {
         // Personalised projection view
         return new TradeSummaryDTO("Your Personal Trading View", username,
                 tradeCount,
-                totalNotional, personalView, null, null,
+                totalNotional, personalView, null, null, null,
                 null,
                 null);
 
@@ -92,14 +92,19 @@ public class DashboardViewService {
                 .collect(
                         Collectors.groupingBy(trade -> trade.getTradeStatus().getTradeStatus(), Collectors.counting()));
 
-        // Breakdown by counterparty and trade type
-        List<TradeSummaryDTO.Breakdown> byBreakdown = tradeRepository.findByBreakdown(username);
+        // Breakdown by trade type
+        List<TradeSummaryDTO.TradeTypeBreakdown> byTradeType = tradeRepository.findByTradeTypeBreakdown(username);
+
+        // Breakdown by counterparty
+        List<TradeSummaryDTO.CounterpartyBreakdown> byCounterparty = tradeRepository
+                .findByCounterpartyBreakdown(username);
 
         // Risk exposure summaries - PayRecieve
         List<TradeSummaryDTO.RiskExposure> riskExposure = tradeRepository.findRiskExposure(username);
 
         return new TradeSummaryDTO("Trade Portfolio Summaries",
-                username, null, null, null, totalNotionalByCurrency, totalTradeCountByStatus, byBreakdown,
+                username, null, null, null, totalNotionalByCurrency, totalTradeCountByStatus, byTradeType,
+                byCounterparty,
                 riskExposure);
 
     }
