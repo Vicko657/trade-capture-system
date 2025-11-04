@@ -2,14 +2,18 @@ package com.technicalchallenge.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.Data;
 
 // Class Based Projection
 @Data
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class TradeSummaryDTO {
 
         // Name of Dashboard
@@ -28,17 +32,16 @@ public class TradeSummaryDTO {
         private final Map<String, Long> totalCountByStatus;
 
         // Breakdowns
-        private final Map<String, BigDecimal> notionalByTradeType;
-        private final Map<String, BigDecimal> notionalByCounterparty;
+        private final List<Breakdown> byBreakdown;
 
         // Risk Exposure
-        private final Map<String, BigDecimal> riskExposure;
+        private final List<RiskExposure> riskExposure;
 
         public TradeSummaryDTO(String dashboard, String traderUsername, Long tradeCount, BigDecimal totalNotional,
                         Page<PersonalView> trades, Map<String, BigDecimal> totalNotionalByCurrency,
                         Map<String, Long> totalCountByStatus,
-                        Map<String, BigDecimal> notionalByTradeType, Map<String, BigDecimal> notionalByCounterparty,
-                        Map<String, BigDecimal> riskExposure) {
+                        List<Breakdown> byBreakdown,
+                        List<RiskExposure> riskExposure) {
 
                 this.dashBoard = dashboard;
                 this.traderUsername = traderUsername;
@@ -47,8 +50,7 @@ public class TradeSummaryDTO {
                 this.trades = trades;
                 this.totalNotionalByCurrency = totalNotionalByCurrency;
                 this.totalCountByStatus = totalCountByStatus;
-                this.notionalByTradeType = notionalByTradeType;
-                this.notionalByCounterparty = notionalByCounterparty;
+                this.byBreakdown = byBreakdown;
                 this.riskExposure = riskExposure;
 
         }
@@ -61,6 +63,21 @@ public class TradeSummaryDTO {
                         String utiCode,
                         String tradeStatus, String bookName, String counterpartyName,
                         Integer version) {
+        }
+
+        // Flatten Version of breakdown
+        public static record Breakdown(String deskName,
+                        String subDeskName, String tradeType,
+                        String counterpartyName,
+                        String currency,
+                        BigDecimal totalNotional) {
+        }
+
+        // Flatten Version of riskexposure
+        public static record RiskExposure(Long tradeLegId, Double rate, String deskName,
+                        String payCurrency,
+                        String payRecieveFlag,
+                        BigDecimal totalNotional) {
         }
 
 }

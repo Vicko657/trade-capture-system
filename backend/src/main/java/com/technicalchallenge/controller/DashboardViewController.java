@@ -24,13 +24,22 @@ public class DashboardViewController {
     private DashboardViewService dashboardViewService;
 
     @GetMapping("/my-trades")
-    @Operation(summary = "Trader's personal trades", description = "Cancels an existing trade by changing its status to cancelled")
+    @Operation(summary = "Trader's personal trades", description = "")
     public ResponseEntity<?> getTraderDashboard(@AuthenticationPrincipal ApplicationUserDetails userDetails,
             Pageable pageable) {
 
         String username = userDetails.getUsername();
 
         return ResponseEntity.ok(dashboardViewService.getTraderDashboard(username, pageable));
+
+    }
+
+    @GetMapping("/summary")
+    @Operation(summary = "Trade portfolio summaries", description = "")
+    public ResponseEntity<?> getPortfolioSummaries(@AuthenticationPrincipal ApplicationUserDetails userDetails) {
+
+        String username = userDetails.getUsername();
+        return ResponseEntity.ok(dashboardViewService.getTradePortfolioSummaries(username));
 
     }
 
