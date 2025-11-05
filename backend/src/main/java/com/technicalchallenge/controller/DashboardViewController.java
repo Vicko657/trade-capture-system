@@ -54,4 +54,13 @@ public class DashboardViewController {
 
     }
 
+    @GetMapping("/daily-summary")
+    @Operation(summary = "Daily trading statistics", description = "")
+    public ResponseEntity<?> getDailyTradingStatistics(@AuthenticationPrincipal ApplicationUserDetails userDetails) {
+
+        String username = userDetails.getUsername();
+        return ResponseEntity.ok(dashboardViewService.getDailyTradingStatistics(username));
+
+    }
+
 }

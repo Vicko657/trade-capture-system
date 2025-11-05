@@ -1,6 +1,10 @@
 package com.technicalchallenge.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.DoubleSummaryStatistics;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -12,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.technicalchallenge.dto.DailySummaryDTO;
 import com.technicalchallenge.dto.TradeSummaryDTO;
+import com.technicalchallenge.dto.DailySummaryDTO.Comparison;
+import com.technicalchallenge.dto.DailySummaryDTO.Metrics;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.repository.TradeRepository;
@@ -93,9 +99,8 @@ public class DashboardViewService {
 
                 // Total number of trades by status
                 Map<String, Long> totalTradeCountByStatus = totalTrades.stream()
-                                .collect(
-                                                Collectors.groupingBy(trade -> trade.getTradeStatus().getTradeStatus(),
-                                                                Collectors.counting()));
+                                .collect(Collectors.groupingBy(trade -> trade.getTradeStatus().getTradeStatus(),
+                                                Collectors.counting()));
 
                 // Breakdown by trade type
                 List<TradeSummaryDTO.TradeTypeBreakdown> byTradeType = tradeRepository
@@ -132,10 +137,73 @@ public class DashboardViewService {
                 List<DailySummaryDTO.BookActivity> bookView = tradeRepository.findBookLevelActivitySummary(username,
                                 bookId);
 
-                return new DailySummaryDTO("Book Level Activities",
-                                username, bookView, null, null, null,
+                return new DailySummaryDTO("Book Level Activities", null,
+                                username, bookView, null, null);
+
+        }
+
+        /**
+         * Dashboard View: Daily trading statistics
+         * 
+         * <p>
+         * Projected view of daily trading statistics.
+         * </p>
+         *
+         * @param username users authorized username
+         */
+        public DailySummaryDTO getDailyTradingStatistics(String username) {
+
+                LocalDate todaysDate = LocalDate.now();
+                LocalDate yesterdaysDate = todaysDate.minusDays(1);
+
+                // Today's User's Trades
+                List<Trade> todaysTrades = tradeRepository.findAllTrades(username).stream()
+                                .filter(t -> t.getTradeDate().equals(todaysDate)).toList();
+
+                // Previous Days - User's Trades
+                List<Trade> yesterdaysTrades = tradeRepository.findAllTrades(username).stream()
+                                .filter(t -> t.getTradeDate().equals(yesterdaysDate)).toList();
+
+                // Daily trade count, total of notionals and user-specific performance metrics
+
+                // Today's Summarised User's Trades
+                DoubleSummaryStatistics todaysMetrics = todaysTrades.stream().collect(Collectors.summarizingDouble(
+                                trade -> trade.getTradeLegs().stream().map(TradeLeg::getNotional)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                                .doubleValue()));
+
+                // Yesterday's Summarised User's Trades
+                DoubleSummaryStatistics yesterdaysMetrics = yesterdaysTrades.stream()
+                                .collect(Collectors.summarizingDouble(
+                                                trade -> trade.getTradeLegs().stream().map(TradeLeg::getNotional)
+                                                                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                                                .doubleValue()));
+
+                Metrics todaysStats = new Metrics(todaysMetrics.getCount(), todaysMetrics.getAverage(),
+                                todaysMetrics.getSum());
+                Metrics yesterdaysStats = new Metrics(yesterdaysMetrics.getCount(), yesterdaysMetrics.getAverage(),
+                                yesterdaysMetrics.getSum());
+
+                Map<String, DailySummaryDTO.Metrics> metrics = new HashMap<>();
+                metrics.put("todaysMetrics", todaysStats);
+                metrics.put("yesterdaysMetrics", yesterdaysStats);
+
+                // Comparison to previous trading days - difference in notioanls & percentage
+                // change
+                Double difference = todaysStats.totalNotional() - yesterdaysStats.totalNotional();
+
+                Double percentageChange = yesterdaysStats.totalNotional() != 0
+                                ? (difference / yesterdaysStats.totalNotional()) * 100
+                                : 0.0;
+
+                Comparison comparison = new Comparison(difference, percentageChange);
+                Map<String, DailySummaryDTO.Comparison> comparisonOfMetrics = new HashMap<>();
+                comparisonOfMetrics.put("notionalComparison", comparison);
+
+                return new DailySummaryDTO("Daily Trading Statistics", LocalDate.now(),
+                                username,
                                 null,
-                                null);
+                                metrics, comparisonOfMetrics);
 
         }
 }
