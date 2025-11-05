@@ -1,5 +1,6 @@
 package com.technicalchallenge.repository;
 
+import com.technicalchallenge.dto.DailySummaryDTO.BookActivity;
 import com.technicalchallenge.dto.TradeSummaryDTO.CounterpartyBreakdown;
 import com.technicalchallenge.dto.TradeSummaryDTO.PersonalView;
 import com.technicalchallenge.dto.TradeSummaryDTO.RiskExposure;
@@ -70,5 +71,11 @@ public interface TradeRepository extends JpaRepository<Trade, Long>, JpaSpecific
     // Risk Exposure by pay/rec
     @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$RiskExposure(l.legId, l.rate, sd.desk.deskName, l.currency.currency, l.payReceiveFlag.payRec, SUM(CASE WHEN l.payReceiveFlag.payRec = 'Receive' THEN l.notional ELSE -l.notional END)) FROM Trade t JOIN t.book b JOIN b.costCenter cc JOIN cc.subDesk sd JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY l.payReceiveFlag.payRec")
     List<RiskExposure> findRiskExposure(@Param("username") String username);
+
+    // Daily Summary DTO
+
+    // Book Level Activity
+    @Query("SELECT new com.technicalchallenge.dto.DailySummaryDTO$BookActivity(b.bookName, b.costCenter.costCenterName, cc.subDesk.subdeskName, COALESCE(SUM(l.notional), 0) ,b.version) FROM Trade t JOIN t.book b JOIN b.costCenter cc JOIN cc.subDesk sd  JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username AND t.book.id = :bookId GROUP BY b.bookName, b.version, b.costCenter.costCenterName ORDER BY b.version")
+    List<BookActivity> findBookLevelActivitySummary(@Param("username") String username, @Param("bookId") Long bookId);
 
 }

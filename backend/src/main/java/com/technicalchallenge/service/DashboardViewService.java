@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.technicalchallenge.dto.DailySummaryDTO;
 import com.technicalchallenge.dto.TradeSummaryDTO;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
@@ -29,84 +30,112 @@ import com.technicalchallenge.repository.TradeRepository;
 @Transactional(readOnly = true)
 public class DashboardViewService {
 
-    private final TradeRepository tradeRepository;
+        private final TradeRepository tradeRepository;
 
-    public DashboardViewService(TradeRepository tradeRepository) {
-        this.tradeRepository = tradeRepository;
-    }
+        public DashboardViewService(TradeRepository tradeRepository) {
+                this.tradeRepository = tradeRepository;
+        }
 
-    /**
-     * Dashboard View: Trader's personal trades
-     * 
-     * <p>
-     * Projected view of the trader's personal trades
-     * </p>
-     * 
-     * @param username   users authorized username
-     * @param pagination users can select the page
-     * @param sortBy     users can sort through the columns
-     */
-    public TradeSummaryDTO getTraderDashboard(String username, Pageable pageable) {
+        /**
+         * Dashboard View: Trader's personal trades
+         * 
+         * <p>
+         * Projected view of the trader's personal trades
+         * </p>
+         * 
+         * @param username   users authorized username
+         * @param pagination users can select the page
+         * @param sortBy     users can sort through the columns
+         */
+        public TradeSummaryDTO getTraderDashboard(String username, Pageable pageable) {
 
-        // Current user's trading view
-        Page<TradeSummaryDTO.PersonalView> personalView = tradeRepository.findPersonalTradesView(username, pageable);
+                // Current user's trading view
+                Page<TradeSummaryDTO.PersonalView> personalView = tradeRepository.findPersonalTradesView(username,
+                                pageable);
 
-        Object result = tradeRepository.findResultsOfTotals(username);
-        Object[] totals = (Object[]) result;
+                Object result = tradeRepository.findResultsOfTotals(username);
+                Object[] totals = (Object[]) result;
 
-        // Total amount of trades and notionals
-        Long tradeCount = ((Number) totals[0]).longValue();
-        BigDecimal totalNotional = (BigDecimal) totals[1];
+                // Total amount of trades and notionals
+                Long tradeCount = ((Number) totals[0]).longValue();
+                BigDecimal totalNotional = (BigDecimal) totals[1];
 
-        // Personalised projection view
-        return new TradeSummaryDTO("Your Personal Trading View", username,
-                tradeCount,
-                totalNotional, personalView, null, null, null,
-                null,
-                null);
+                // Personalised projection view
+                return new TradeSummaryDTO("Your Personal Trading View", username,
+                                tradeCount,
+                                totalNotional, personalView, null, null, null,
+                                null,
+                                null);
 
-    }
+        }
 
-    /**
-     * Dashboard View: Trade portfolio summaries
-     * 
-     * <p>
-     * Projected view of the trade portfolio summaries.
-     * </p>
-     *
-     * @param username users authorized username
-     */
+        /**
+         * Dashboard View: Trade portfolio summaries
+         * 
+         * <p>
+         * Projected view of the trade portfolio summaries.
+         * </p>
+         *
+         * @param username users authorized username
+         */
 
-    public TradeSummaryDTO getTradePortfolioSummaries(String username) {
+        public TradeSummaryDTO getTradePortfolioSummaries(String username) {
 
-        List<Trade> totalTrades = tradeRepository.findAllTrades(username);
+                List<Trade> totalTrades = tradeRepository.findAllTrades(username);
 
-        // Total notional amounts by currency
-        Map<String, BigDecimal> totalNotionalByCurrency = totalTrades.stream().flatMap(trade -> trade
-                .getTradeLegs().stream()).filter(leg -> leg.getCurrency() != null && leg.getNotional() != null)
-                .collect(Collectors.groupingBy(leg -> leg.getCurrency().getCurrency(),
-                        Collectors.reducing(BigDecimal.ZERO, TradeLeg::getNotional, BigDecimal::add)));
+                // Total notional amounts by currency
+                Map<String, BigDecimal> totalNotionalByCurrency = totalTrades.stream().flatMap(trade -> trade
+                                .getTradeLegs().stream())
+                                .filter(leg -> leg.getCurrency() != null && leg.getNotional() != null)
+                                .collect(Collectors.groupingBy(leg -> leg.getCurrency().getCurrency(),
+                                                Collectors.reducing(BigDecimal.ZERO, TradeLeg::getNotional,
+                                                                BigDecimal::add)));
 
-        // Total number of trades by status
-        Map<String, Long> totalTradeCountByStatus = totalTrades.stream()
-                .collect(
-                        Collectors.groupingBy(trade -> trade.getTradeStatus().getTradeStatus(), Collectors.counting()));
+                // Total number of trades by status
+                Map<String, Long> totalTradeCountByStatus = totalTrades.stream()
+                                .collect(
+                                                Collectors.groupingBy(trade -> trade.getTradeStatus().getTradeStatus(),
+                                                                Collectors.counting()));
 
-        // Breakdown by trade type
-        List<TradeSummaryDTO.TradeTypeBreakdown> byTradeType = tradeRepository.findByTradeTypeBreakdown(username);
+                // Breakdown by trade type
+                List<TradeSummaryDTO.TradeTypeBreakdown> byTradeType = tradeRepository
+                                .findByTradeTypeBreakdown(username);
 
-        // Breakdown by counterparty
-        List<TradeSummaryDTO.CounterpartyBreakdown> byCounterparty = tradeRepository
-                .findByCounterpartyBreakdown(username);
+                // Breakdown by counterparty
+                List<TradeSummaryDTO.CounterpartyBreakdown> byCounterparty = tradeRepository
+                                .findByCounterpartyBreakdown(username);
 
-        // Risk exposure summaries - PayRecieve
-        List<TradeSummaryDTO.RiskExposure> riskExposure = tradeRepository.findRiskExposure(username);
+                // Risk exposure summaries - PayRecieve
+                List<TradeSummaryDTO.RiskExposure> riskExposure = tradeRepository.findRiskExposure(username);
 
-        return new TradeSummaryDTO("Trade Portfolio Summaries",
-                username, null, null, null, totalNotionalByCurrency, totalTradeCountByStatus, byTradeType,
-                byCounterparty,
-                riskExposure);
+                return new TradeSummaryDTO("Trade Portfolio Summaries",
+                                username, null, null, null, totalNotionalByCurrency, totalTradeCountByStatus,
+                                byTradeType,
+                                byCounterparty,
+                                riskExposure);
 
-    }
+        }
 
+        /**
+         * Dashboard View: Book Level Activity
+         * 
+         * <p>
+         * Projected view of book level activities.
+         * </p>
+         *
+         * @param username users authorized username
+         * @param bookId   book's unique identification
+         */
+        public DailySummaryDTO getBookLevelActivity(String username, Long bookId) {
+
+                // Book level trading view
+                List<DailySummaryDTO.BookActivity> bookView = tradeRepository.findBookLevelActivitySummary(username,
+                                bookId);
+
+                return new DailySummaryDTO("Book Level Activities",
+                                username, bookView, null, null, null,
+                                null,
+                                null);
+
+        }
 }
