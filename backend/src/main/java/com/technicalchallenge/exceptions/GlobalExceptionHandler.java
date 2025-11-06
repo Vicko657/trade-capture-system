@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
                                                 .getMessage(),
                                 LocalDateTime.now(), request.getRequestURI());
 
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
 
         // Handles Entities not active
@@ -95,15 +95,29 @@ public class GlobalExceptionHandler {
         // Handles Denied Privilege Access
         @ResponseStatus(HttpStatus.FORBIDDEN)
         @ExceptionHandler(UnauthorizedAccessException.class)
-        public ResponseEntity<ErrorResponse> handleInValidSearch(
+        public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(
                         UnauthorizedAccessException e, HttpServletRequest request) {
 
                 ErrorResponse errorResponse = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Forbidden",
-                                "Denied Access", null, e
+                                "Denied Access Exception", null, e
                                                 .getMessage(),
                                 LocalDateTime.now(), request.getRequestURI());
 
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        }
+
+        // Handles Data not found for trader's dashboard
+        @ResponseStatus(HttpStatus.NO_CONTENT)
+        @ExceptionHandler(DashboardDataNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleDashboardDataNotFound(
+                        DashboardDataNotFoundException e, HttpServletRequest request) {
+
+                ErrorResponse errorResponse = new ErrorResponse(HttpStatus.NO_CONTENT.value(), "No Content",
+                                "Dashboard Data Not Found Exception", null, e
+                                                .getMessage(),
+                                LocalDateTime.now(), request.getRequestURI());
+
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(errorResponse);
         }
 
 }

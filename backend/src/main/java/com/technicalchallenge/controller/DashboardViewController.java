@@ -11,56 +11,94 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.technicalchallenge.dto.DailySummaryDTO;
+import com.technicalchallenge.dto.TradeSummaryDTO;
 import com.technicalchallenge.security.ApplicationUserDetails;
 import com.technicalchallenge.service.DashboardViewService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * Rest Controller for viewing personal dashboards and blotter system
+ * 
+ * API endpoints to complete READ operations.
+ */
 @RestController
 @RequestMapping("/api/trades/dashboard")
+@Tag(name = "Dashboard Views", description = "Trader dashboard and blotter system including personal trades, trades summary, daily summary and book level activity")
 public class DashboardViewController {
-    private static final Logger logger = LoggerFactory.getLogger(DashboardViewController.class);
+        private static final Logger logger = LoggerFactory.getLogger(DashboardViewController.class);
 
-    @Autowired
-    private DashboardViewService dashboardViewService;
+        @Autowired
+        private DashboardViewService dashboardViewService;
 
-    @GetMapping("/my-trades")
-    @Operation(summary = "Trader's personal trades", description = "")
-    public ResponseEntity<?> getTraderDashboard(@AuthenticationPrincipal ApplicationUserDetails userDetails,
-            Pageable pageable) {
+        @Operation(summary = "Get the trader's personal trades view", description = "Retrieves all the user's trades.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's trades", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeSummaryDTO.class))),
+                        @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
+        @GetMapping("/my-trades")
+        public ResponseEntity<TradeSummaryDTO> getTraderDashboard(
+                        @AuthenticationPrincipal ApplicationUserDetails userDetails,
+                        Pageable pageable) {
+                String username = userDetails.getUsername();
+                logger.info("Fetching the user's personal trades: {}", username);
+                return ResponseEntity.ok(dashboardViewService.getTraderDashboard(username, pageable));
 
-        String username = userDetails.getUsername();
+        }
 
-        return ResponseEntity.ok(dashboardViewService.getTraderDashboard(username, pageable));
+        @Operation(summary = "Get the trader's portfolio summaries view", description = "Retrieves the trader's portfolio summary including the total notional amounts by currency, total number of trades by status, breakdowns by trade type and counterparties and risk exposure.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's trade summary", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeSummaryDTO.class))),
+                        @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
+        @GetMapping("/summary")
+        public ResponseEntity<TradeSummaryDTO> getPortfolioSummaries(
+                        @AuthenticationPrincipal ApplicationUserDetails userDetails) {
+                String username = userDetails.getUsername();
+                logger.info("Fetching the user's trade summary: {}", username);
+                return ResponseEntity.ok(dashboardViewService.getTradePortfolioSummaries(username));
 
-    }
+        }
 
-    @GetMapping("/summary")
-    @Operation(summary = "Trade portfolio summaries", description = "")
-    public ResponseEntity<?> getPortfolioSummaries(@AuthenticationPrincipal ApplicationUserDetails userDetails) {
+        @Operation(summary = "Get the trader's book level activities view", description = "Retrieves the trader's book level activities view including book-level trade aggregation.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's book level activity", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DailySummaryDTO.class))),
+                        @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
+        @GetMapping("/book/{id}/trades")
+        public ResponseEntity<DailySummaryDTO> getBookActivites(
+                        @AuthenticationPrincipal ApplicationUserDetails userDetails,
+                        @PathVariable("id") Long id) {
 
-        String username = userDetails.getUsername();
-        return ResponseEntity.ok(dashboardViewService.getTradePortfolioSummaries(username));
+                String username = userDetails.getUsername();
+                logger.info("Fetching the user's book level activity: {}", username);
+                return ResponseEntity.ok(dashboardViewService.getBookLevelActivity(username, id));
 
-    }
+        }
 
-    @GetMapping("/book/{id}/trades")
-    @Operation(summary = "Book Level Activities", description = "")
-    public ResponseEntity<?> getBookActivites(@AuthenticationPrincipal ApplicationUserDetails userDetails,
-            @PathVariable("id") Long id) {
+        @Operation(summary = "Get the trader's daily trading statistics view", description = "Retrieves the trader's daily summary including the daily summaried statistics and comparison to previous trading days.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's daily trading statistics", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DailySummaryDTO.class))),
+                        @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
+        @GetMapping("/daily-summary")
+        public ResponseEntity<DailySummaryDTO> getDailyTradingStatistics(
+                        @AuthenticationPrincipal ApplicationUserDetails userDetails) {
 
-        String username = userDetails.getUsername();
-        return ResponseEntity.ok(dashboardViewService.getBookLevelActivity(username, id));
+                String username = userDetails.getUsername();
+                logger.info("Fetching the user's daily trading statistics: {}", username);
+                return ResponseEntity.ok(dashboardViewService.getDailyTradingStatistics(username));
 
-    }
-
-    @GetMapping("/daily-summary")
-    @Operation(summary = "Daily trading statistics", description = "")
-    public ResponseEntity<?> getDailyTradingStatistics(@AuthenticationPrincipal ApplicationUserDetails userDetails) {
-
-        String username = userDetails.getUsername();
-        return ResponseEntity.ok(dashboardViewService.getDailyTradingStatistics(username));
-
-    }
+        }
 
 }

@@ -71,14 +71,14 @@ public class TradeSummaryDTO {
         // Flatten Version of breakdownByTradeType
         public static record TradeTypeBreakdown(
                         String tradeType,
-                        BigDecimal totalNotional, BigDecimal percentage) {
+                        BigDecimal totalNotional, Double percentage) {
         }
 
         // Flatten Version of breakdownByCounterparty
         public static record CounterpartyBreakdown(
                         String counterpartyName,
                         BigDecimal totalNotional,
-                        BigDecimal percentage) {
+                        Double percentage) {
 
         }
 

@@ -2,7 +2,6 @@ package com.technicalchallenge.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.DoubleSummaryStatistics;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +17,7 @@ import com.technicalchallenge.dto.DailySummaryDTO;
 import com.technicalchallenge.dto.TradeSummaryDTO;
 import com.technicalchallenge.dto.DailySummaryDTO.Comparison;
 import com.technicalchallenge.dto.DailySummaryDTO.Metrics;
+import com.technicalchallenge.exceptions.DashboardDataNotFoundException;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.repository.TradeRepository;
@@ -37,9 +37,11 @@ import com.technicalchallenge.repository.TradeRepository;
 public class DashboardViewService {
 
         private final TradeRepository tradeRepository;
+        private final BookService bookService;
 
-        public DashboardViewService(TradeRepository tradeRepository) {
+        public DashboardViewService(TradeRepository tradeRepository, BookService bookService) {
                 this.tradeRepository = tradeRepository;
+                this.bookService = bookService;
         }
 
         /**
@@ -60,6 +62,12 @@ public class DashboardViewService {
                                 pageable);
 
                 Object result = tradeRepository.findResultsOfTotals(username);
+
+                // DashboardDataNotFoundException thrown if the user doesn't have trades
+                if (personalView == null || personalView.isEmpty() || result == null) {
+                        throw new DashboardDataNotFoundException("Dashboard data was not found for " + username);
+                }
+
                 Object[] totals = (Object[]) result;
 
                 // Total amount of trades and notionals
@@ -67,11 +75,13 @@ public class DashboardViewService {
                 BigDecimal totalNotional = (BigDecimal) totals[1];
 
                 // Personalised projection view
-                return new TradeSummaryDTO("Your Personal Trading View", username,
+                TradeSummaryDTO blotterView = new TradeSummaryDTO("Your Personal Trading View", username,
                                 tradeCount,
                                 totalNotional, personalView, null, null, null,
                                 null,
                                 null);
+
+                return blotterView;
 
         }
 
@@ -88,6 +98,11 @@ public class DashboardViewService {
         public TradeSummaryDTO getTradePortfolioSummaries(String username) {
 
                 List<Trade> totalTrades = tradeRepository.findAllTrades(username);
+
+                // DashboardDataNotFoundException thrown if the user doesn't have trades
+                if (totalTrades == null || totalTrades.isEmpty()) {
+                        throw new DashboardDataNotFoundException("Dashboard data was not found for " + username);
+                }
 
                 // Total notional amounts by currency
                 Map<String, BigDecimal> totalNotionalByCurrency = totalTrades.stream().flatMap(trade -> trade
@@ -113,11 +128,20 @@ public class DashboardViewService {
                 // Risk exposure summaries - PayRecieve
                 List<TradeSummaryDTO.RiskExposure> riskExposure = tradeRepository.findRiskExposure(username);
 
-                return new TradeSummaryDTO("Trade Portfolio Summaries",
+                // DashboardDataNotFoundException thrown if the user doesn't have trades
+                if (totalNotionalByCurrency == null || totalTradeCountByStatus == null
+                                || byTradeType == null || byCounterparty == null
+                                || riskExposure == null) {
+                        throw new DashboardDataNotFoundException("Dashboard data was not found for " + username);
+                }
+
+                TradeSummaryDTO portfolioView = new TradeSummaryDTO("Trade Portfolio Summaries",
                                 username, null, null, null, totalNotionalByCurrency, totalTradeCountByStatus,
                                 byTradeType,
                                 byCounterparty,
                                 riskExposure);
+
+                return portfolioView;
 
         }
 
@@ -137,8 +161,16 @@ public class DashboardViewService {
                 List<DailySummaryDTO.BookActivity> bookView = tradeRepository.findBookLevelActivitySummary(username,
                                 bookId);
 
-                return new DailySummaryDTO("Book Level Activities", null,
+                // DashboardDataNotFoundException thrown if the user doesn't have trades
+                if (bookView == null || bookView.isEmpty()) {
+                        throw new DashboardDataNotFoundException(
+                                        "Dashboard data was not found for " + username + " with this " + bookId);
+                }
+
+                DailySummaryDTO bookActivityView = new DailySummaryDTO("Book Level Activities", null,
                                 username, bookView, null, null);
+
+                return bookActivityView;
 
         }
 
@@ -163,6 +195,12 @@ public class DashboardViewService {
                 // Previous Days - User's Trades
                 List<Trade> yesterdaysTrades = tradeRepository.findAllTrades(username).stream()
                                 .filter(t -> t.getTradeDate().equals(yesterdaysDate)).toList();
+
+                // DashboardDataNotFoundException thrown if the user doesn't have trades
+                if (todaysTrades == null || todaysTrades.isEmpty() || yesterdaysTrades == null
+                                || yesterdaysTrades.isEmpty()) {
+                        throw new DashboardDataNotFoundException("Dashboard data was not found for " + username);
+                }
 
                 // Daily trade count, total of notionals and user-specific performance metrics
 
@@ -200,10 +238,12 @@ public class DashboardViewService {
                 Map<String, DailySummaryDTO.Comparison> comparisonOfMetrics = new HashMap<>();
                 comparisonOfMetrics.put("notionalComparison", comparison);
 
-                return new DailySummaryDTO("Daily Trading Statistics", LocalDate.now(),
+                DailySummaryDTO dailyView = new DailySummaryDTO("Daily Trading Statistics", LocalDate.now(),
                                 username,
                                 null,
                                 metrics, comparisonOfMetrics);
+
+                return dailyView;
 
         }
 }
