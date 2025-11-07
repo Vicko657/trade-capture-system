@@ -1,7 +1,7 @@
 package com.technicalchallenge.security;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,16 +11,28 @@ import com.technicalchallenge.model.ApplicationUser;
 
 import lombok.AllArgsConstructor;
 
-// Spring security - User Details Core Information
+/**
+ * User Details (Core Information) for Spring security.
+ * 
+ * <p>
+ * Including user's username, password, role and privileges
+ * </p>
+ */
 @AllArgsConstructor
 public class ApplicationUserDetails implements UserDetails {
 
     private ApplicationUser user;
 
-    // Will implement pre-authorization for privileges
+    /**
+     * Implemented pre-authorization for privileges with Granted Authority
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("Role_" + user.getUserProfile().getUserType()));
+
+        // Maps the user's roles & privilleges established in the database
+        return user.getUserProfile().getPrivileges().stream()
+                .map(privilege -> new SimpleGrantedAuthority(privilege.getPrivilege().getName()))
+                .collect(Collectors.toList());
     }
 
     @Override
