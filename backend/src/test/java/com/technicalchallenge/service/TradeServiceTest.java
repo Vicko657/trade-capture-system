@@ -352,11 +352,11 @@ class TradeServiceTest {
         when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
 
         // When
-        Optional<Trade> result = tradeService.getTradeById(100001L);
+        Trade result = tradeService.getTradeById(100001L);
 
         // Then
-        assertTrue(result.isPresent());
-        assertEquals(100001L, result.get().getTradeId());
+        assertNotNull(result);
+        assertEquals(100001L, result.getTradeId());
     }
 
     @Test
@@ -365,10 +365,10 @@ class TradeServiceTest {
         when(tradeRepository.findByTradeIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         // When
-        Optional<Trade> result = tradeService.getTradeById(999L);
+        Trade result = tradeService.getTradeById(999L);
 
         // Then
-        assertFalse(result.isPresent());
+        assertNotNull(result);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.repository.ApplicationUserRepository;
 import org.junit.jupiter.api.Test;
@@ -23,9 +24,9 @@ public class UserServiceTest {
         ApplicationUser user = new ApplicationUser();
         user.setId(1L);
         when(applicationUserRepository.findById(1L)).thenReturn(Optional.of(user));
-        Optional<ApplicationUser> found = applicationUserService.getUserById(1L);
-        assertTrue(found.isPresent());
-        assertEquals(1L, found.get().getId());
+        ApplicationUser found = applicationUserService.getUserById(1L);
+        assertNotNull(found);
+        assertEquals(1L, found.getId());
     }
 
     @Test
@@ -49,8 +50,12 @@ public class UserServiceTest {
     @Test
     void testFindApplicationUserByNonExistentId() {
         when(applicationUserRepository.findById(99L)).thenReturn(Optional.empty());
-        Optional<ApplicationUser> found = applicationUserService.getUserById(99L);
-        assertFalse(found.isPresent());
+
+        ApplicationUser found = applicationUserService.getUserById(99L);
+        Exception exception = assertThrows(EntityNotFoundException.class, () -> {
+            validateApplicationUser(found);
+        });
+        assertNotNull(exception);
     }
 
     // Business logic: test ApplicationUser cannot be created with null login id
