@@ -165,3 +165,5 @@ fix(test): TradeLegControllerTest - Handled and seperated "notional" validation 
 - Solution: Removed the if statement from the controller, it was returning the wrong message for when a notional was null and the controller needs to handle both validation errors seperately. In the Global Exception Handler, handleFieldValidationExceptions() method, the "notional" fieldError was targeted, by creating a new FieldError "notionalError" and using getBindingResult() to get the specfic field, FieldError notionalError = e.getBindingResult().getFieldError("notional"); on line 24. An if statement was used to return both the @NotNull and @Postive validation errors defaultmessages used in the tradeLegDTO.
 - Impact: Enables the test, to validate if the "notional" is positive, before the tradeLeg is created
 ```
+
+### Tests are now failing due to enhancement being implemented in to the system such as Spring Security, validation and a new type of error handling
