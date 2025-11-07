@@ -13,7 +13,6 @@ import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.InvalidSearchException;
-import com.technicalchallenge.service.ApplicationUserService;
 import com.technicalchallenge.service.BookService;
 import com.technicalchallenge.service.BusinessDayConventionService;
 import com.technicalchallenge.service.CounterpartyService;
@@ -26,6 +25,22 @@ import com.technicalchallenge.service.ScheduleService;
 import com.technicalchallenge.service.TradeStatusService;
 import com.technicalchallenge.service.TradeTypeService;
 
+/**
+ * Trade Validator
+ * 
+ * <p>
+ * Validates the business rules for trades and for the tradelegs.
+ * 
+ * Reference data is called here too to make sure that the data does exist
+ * 
+ * Using {@link ValidationResult} and called in {@link GlobalExceptionHandler}
+ * </p>
+ * 
+ * FUTURE: Would create different validators, for entities etc... that will
+ * handle validations or create an interface which can abstract the same
+ * principles
+ * 
+ */
 @Component
 public class TradeValidator {
 
@@ -35,8 +50,6 @@ public class TradeValidator {
     private BookService bookService;
     @Autowired
     private CounterpartyService counterpartyService;
-    @Autowired
-    private ApplicationUserService applicationUserService;
     @Autowired
     private TradeStatusService tradeStatusService;
     @Autowired
@@ -56,7 +69,11 @@ public class TradeValidator {
     @Autowired
     private BusinessDayConventionService businessDayConventionService;
 
-    // Validation for Trade Business Rules
+    /**
+     * 
+     * 1. Validation for Trade Business Rules
+     * 
+     */
     public ValidationResult validateTradeBusinessRules(TradeDTO tradeDTO) {
 
         List<String> errors = new ArrayList<>();
@@ -99,14 +116,21 @@ public class TradeValidator {
 
     }
 
-    // Entity Status Validation
+    /**
+     * 
+     * 2. Entity Status Validation
+     * 
+     * The void method is called in the Validation for Trade Business Rules,
+     * before the business rules are checked
+     * 
+     * User validation is validated in the {@link AuthorizationService}
+     * 
+     */
     private void validateAllReferenceData(TradeDTO tradeDTO) {
 
         // User, book and counterparty must be active, exist and be valid
-
         validateBookReference(tradeDTO);
         validateCounterpartyReference(tradeDTO);
-        validateUserReference(tradeDTO);
 
         // All reference data must exist and be valid
         validateTradeStatusReference(tradeDTO);
@@ -135,16 +159,6 @@ public class TradeValidator {
         counterpartyService.validateCounterparty(counterpartyId, counterpartyName);
     }
 
-    // User Validation - TraderUser & Inputter User
-    private void validateUserReference(TradeDTO tradeDTO) {
-
-        Long traderUserId = tradeDTO.getTraderUserId();
-        String traderUserName = tradeDTO.getTraderUserName();
-        Long inputterUserId = tradeDTO.getTradeInputterUserId();
-        String inputterUserName = tradeDTO.getInputterUserName();
-
-    }
-
     // TradeStatus Validation
     private void validateTradeStatusReference(TradeDTO tradeDTO) {
 
@@ -166,7 +180,11 @@ public class TradeValidator {
 
     }
 
-    // Validation for TradeLeg Consisitency Business Rules
+    /**
+     * 
+     * 3. Validation for TradeLeg Consisitency Business Rules
+     * 
+     */
     public ValidationResult validateTradeLegConsistency(List<TradeLegDTO> legs) {
 
         List<String> errors = new ArrayList<>();
@@ -216,6 +234,11 @@ public class TradeValidator {
 
     }
 
+    /**
+     * 
+     * 4. Validation for SearchTradeByCriteria & Filtering
+     * 
+     */
     public void validateSearch(SearchTradeByCriteria searchTradeByCriteria) {
         // Validate date range for tradeDate
         if (searchTradeByCriteria.tradeStartDate() != null && searchTradeByCriteria.tradeEndDate() != null
@@ -224,6 +247,11 @@ public class TradeValidator {
         }
     }
 
+    /**
+     * 
+     * 5. Validation for RSQLSearch
+     * 
+     */
     public void validateRSQLSearch(String query) {
         // Validate query - if the query is null or missing the exception is thrown
         if (query == null || query.isEmpty()) {
@@ -232,7 +260,11 @@ public class TradeValidator {
 
     }
 
-    // Entity Status Validation - Cross Leg
+    /**
+     * 
+     * 6. Entity Status Validation - Cross Leg
+     * 
+     */
     private void validateCrossLegReferenceData(TradeLegDTO tradeLegDTO) {
 
         validateCurrencyReference(tradeLegDTO);
