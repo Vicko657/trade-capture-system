@@ -1,6 +1,7 @@
 package com.technicalchallenge.service;
 
 import com.technicalchallenge.model.UserPrivilege;
+import com.technicalchallenge.model.UserPrivilegeId;
 import com.technicalchallenge.repository.UserPrivilegeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * User privilege service class provides business logic and operations relating
+ * to the user's type and privileges.
+ * 
+ */
 @Service
 public class UserPrivilegeService {
     private static final Logger logger = LoggerFactory.getLogger(UserPrivilegeService.class);
@@ -23,7 +29,7 @@ public class UserPrivilegeService {
         return userPrivilegeRepository.findAll();
     }
 
-    public Optional<UserPrivilege> getUserPrivilegeById(Long id) {
+    public Optional<UserPrivilege> getUserPrivilegeById(UserPrivilegeId id) {
         logger.debug("Retrieving user privilege by id: {}", id);
         return userPrivilegeRepository.findById(id);
     }
@@ -33,7 +39,7 @@ public class UserPrivilegeService {
         return userPrivilegeRepository.save(userPrivilege);
     }
 
-    public void deleteUserPrivilege(Long id) {
+    public void deleteUserPrivilege(UserPrivilegeId id) {
         logger.warn("Deleting user privilege with id: {}", id);
         userPrivilegeRepository.deleteById(id);
     }

@@ -15,7 +15,7 @@ INSERT INTO business_day_convention (id, bdc) VALUES (1000, 'Following'), (1001,
 INSERT INTO pay_rec (id, pay_rec) VALUES (1000, 'Pay'), (1001, 'Receive');
 
 -- Users
-INSERT INTO user_profile (id, user_type) VALUES (1000,'TRADER_SALES'), (1001,'SUPPORT'),(1002,'ADMIN'),(1003,'MO'),(1004,'SUPERUSER');
+INSERT INTO user_profile (id, user_type) VALUES (1000,'TRADER'), (1001,'SUPPORT'),(1002,'ADMIN'),(1003,'MO'),(1004,'SUPERUSER'),(1005,'SALES');
 INSERT INTO application_user (id, first_name, last_name, login_id, password, active, user_profile_id, version, last_modified_timestamp) VALUES
   (1000, 'Alice', 'Smith', 'alice', 'password', true, 1002, 1, '2025-06-02T00:00:00'),
   (1001, 'Bob', 'Jones', 'bob', 'password', true, 1001, 1, '2025-06-02T00:00:00'),
@@ -25,10 +25,22 @@ INSERT INTO application_user (id, first_name, last_name, login_id, password, act
   (1006, 'Stuart', 'McGill', 'stuart', 'password', true, 1004, 1, '2025-06-02T00:00:00');
 
 -- Privileges
-INSERT INTO privilege (id, name) VALUES (1000, 'BOOK_TRADE'), (1001, 'AMEND_TRADE'),(1002, 'READ_TRADE'), (1003, 'READ_USER'), (1004,'WRITE_USER'), (1005,'READ_STATIC_DATA'), (1006,'WRITE_STATIC_DATA');
+INSERT INTO privilege (id, name) VALUES (1000, 'BOOK_TRADE'), (1001, 'AMEND_TRADE'),(1002, 'READ_TRADE'), (1003, 'READ_USER'), (1004,'WRITE_USER'), (1005,'READ_STATIC_DATA'), (1006,'WRITE_STATIC_DATA'),(1007, 'CREATE_TRADE'),(1008, 'CANCEL_TRADE'),(1009, 'TERMINATE_TRADE'),(1010, 'DASHBOARD_VIEW'),(1011, 'DEACTIVATE_USER');
 
--- User Privileges (Fixed to match UserPrivilege entity structure - no separate id column)
-INSERT INTO user_privilege (user_id, privilege_id) VALUES (1000, 1000), (1001, 1001), (1000, 1002), (1003, 1000), (1004, 1001), (1005, 1000);
+-- User Privileges (Fixed to match UserPrivilege entity structure - no separate id column) Fixed: Restructured for Spring Security
+-- (1000) Trader (Create, Amend, Book, View, Cancel & Terminate Trades, DashboardView)
+INSERT INTO user_privilege (userprofile_id, privilege_id) VALUES (1000, 1007), (1000, 1001), (1000, 1000), (1000, 1002), (1000, 1008),(1000, 1009), (1000, 1010);
+-- (1005) Sales (Create & Amend Trades)
+INSERT INTO user_privilege (userprofile_id, privilege_id) VALUES (1005, 1007), (1005, 1001);
+-- (1001) Support (View Trades Only)
+INSERT INTO user_privilege (userprofile_id, privilege_id) VALUES (1001, 1002);
+-- (1003) Middle Office (Amend & Read Trades)
+INSERT INTO user_privilege (userprofile_id, privilege_id) VALUES (1003, 1001), (1003, 1002);
+-- (1002) Admin (Writeuser, Readuser & Deactivateuser Trades)
+INSERT INTO user_privilege (userprofile_id, privilege_id) VALUES (1002, 1004), (1002, 1003), (1002, 1011);
+-- (1004) Superuser (All Access)
+INSERT INTO user_privilege (userprofile_id, privilege_id) VALUES (1004, 1000), (1004, 1001), (1004, 1002), (1004, 1003), (1004, 1004), (1004, 1005), (1004, 1006),(1004, 1007),(1004, 1008),(1004, 1009), (1004, 1010), (1004, 1011);
+
 
 -- Counterparties
 INSERT INTO counterparty (id, name, address, phone_number, internal_code, created_date, last_modified_date, active) VALUES
