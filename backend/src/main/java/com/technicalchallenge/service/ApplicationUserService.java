@@ -1,9 +1,10 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.InActiveException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.repository.ApplicationUserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -29,9 +30,19 @@ public class ApplicationUserService {
         return applicationUserRepository.findAll();
     }
 
-    public Optional<ApplicationUser> getUserById(Long id) {
+    public ApplicationUser getUserById(Long id) {
         logger.debug("Retrieving user by id: {}", id);
-        return applicationUserRepository.findById(id);
+
+        ApplicationUser user = applicationUserRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found by id" + id));
+
+        return user;
+    }
+
+    public ApplicationUser getUserByUserName(String userName) {
+        logger.debug("Retrieving user by userName: {}", userName);
+        return applicationUserRepository.findByFirstName(userName)
+                .orElseThrow(() -> new EntityNotFoundException("User not found by firstName" + userName));
     }
 
     public Optional<ApplicationUser> getUserByLoginId(String loginId) {
@@ -52,7 +63,7 @@ public class ApplicationUserService {
     public ApplicationUser updateUser(Long id, ApplicationUser user) {
         logger.info("Updating user with id: {}", id);
         ApplicationUser existingUser = applicationUserRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         // Update fields
         existingUser.setFirstName(user.getFirstName());
         existingUser.setLastName(user.getLastName());

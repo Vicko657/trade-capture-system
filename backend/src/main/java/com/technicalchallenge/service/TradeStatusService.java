@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.TradeStatus;
 import com.technicalchallenge.repository.TradeStatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,16 @@ public class TradeStatusService {
     public Optional<TradeStatus> findById(Long id) {
         logger.debug("Retrieving trade status by id: {}", id);
         return tradeStatusRepository.findById(id);
+    }
+
+    public void validateTradeStatus(Long id) {
+
+        if (id != null) {
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("TradeStatus not found by id");
+            }
+        }
+
     }
 
     public TradeStatus save(TradeStatus tradeStatus) {

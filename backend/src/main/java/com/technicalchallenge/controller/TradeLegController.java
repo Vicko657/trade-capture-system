@@ -2,7 +2,6 @@ package com.technicalchallenge.controller;
 
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.mapper.TradeLegMapper;
-import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.service.TradeLegService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,10 +46,6 @@ public class TradeLegController {
     @PostMapping
     public ResponseEntity<?> createTradeLeg(@Valid @RequestBody TradeLegDTO tradeLegDTO) {
         logger.info("Creating new trade leg: {}", tradeLegDTO);
-        // Validation: notional > 0, trade, currency, legRateType required
-        if (tradeLegDTO.getCurrency() == null || tradeLegDTO.getLegType() == null) {
-            return ResponseEntity.badRequest().body("Currency and Leg Rate Type are required");
-        }
         var entity = tradeLegMapper.toEntity(tradeLegDTO);
         var saved = tradeLegService.saveTradeLeg(entity, tradeLegDTO);
         return ResponseEntity.ok(tradeLegMapper.toDto(saved));

@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.LegType;
 import com.technicalchallenge.repository.LegTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,24 @@ public class LegTypeService {
     public Optional<LegType> findById(Long id) {
         logger.debug("Retrieving leg type by id: {}", id);
         return legTypeRepository.findById(id);
+    }
+
+    public Optional<LegType> findByLegType(String type) {
+        logger.debug("Retrieving leg type by type: {}", type);
+        return legTypeRepository.findByType(type);
+    }
+
+    public void validateLegType(Long id, String type) {
+
+        if (id != null && type != null) {
+
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("LegType not found by id");
+            } else if (findByLegType(type).isEmpty()) {
+                throw new EntityNotFoundException("LegType not found by type");
+            }
+        }
+
     }
 
     public LegType save(LegType legType) {

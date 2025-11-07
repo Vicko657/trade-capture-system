@@ -5,8 +5,8 @@ import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
-import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
+import com.technicalchallenge.exceptions.InvalidSearchException;
+import com.technicalchallenge.exceptions.ValidationException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Cashflow;
@@ -20,12 +20,17 @@ import com.technicalchallenge.repository.BookRepository;
 import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import com.technicalchallenge.repository.CashflowRepository;
 import com.technicalchallenge.repository.CounterpartyRepository;
+import com.technicalchallenge.repository.CurrencyRepository;
+import com.technicalchallenge.repository.HolidayCalendarRepository;
 import com.technicalchallenge.repository.LegTypeRepository;
 import com.technicalchallenge.repository.PayRecRepository;
 import com.technicalchallenge.repository.ScheduleRepository;
 import com.technicalchallenge.repository.TradeLegRepository;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.repository.TradeStatusRepository;
+import com.technicalchallenge.validation.TradeValidator;
+import com.technicalchallenge.validation.ValidationResult;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,6 +86,12 @@ class TradeServiceTest {
     private BusinessDayConventionRepository businessDayConventionRepository;
 
     @Mock
+    private HolidayCalendarRepository HolidayCalendarRepository;
+
+    @Mock
+    private CurrencyRepository currencyRepository;
+
+    @Mock
     private AdditionalInfoService additionalInfoService;
 
     @Mock
@@ -91,6 +102,12 @@ class TradeServiceTest {
 
     @Mock
     private ApplicationUserRepository applicationUserRepository;
+
+    @Mock
+    private BookService bookService;
+
+    @Mock
+    private TradeValidator tradeValidator;
 
     @InjectMocks
     private TradeService tradeService;
@@ -117,27 +134,9 @@ class TradeServiceTest {
     void setUp() {
         // Set up test data
 
-        // TradeDTO - DTO
-        tradeDTO = new TradeDTO();
-        tradeDTO.setTradeId(100001L);
-        tradeDTO.setVersion(1);
-        tradeDTO.setTradeDate(LocalDate.of(2025, 1, 15));
-        tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
-        tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
-
-        // Trade - Entity
-        trade = new Trade();
-        trade.setId(1L);
-        trade.setTradeId(100001L);
-        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
-        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
-        trade.setBook(book);
-        trade.setCounterparty(counterparty);
-        trade.setTradeStatus(tradeStatus);
-        trade.setVersion(1);
-
         // TraderUser Reference
         tradeUser1 = new ApplicationUser();
+        tradeUser1.setActive(true);
         tradeUser1.setId(1L);
         tradeUser1.setFirstName("John");
         tradeUser1.setLastName("Smith");
@@ -149,27 +148,20 @@ class TradeServiceTest {
 
         // Book Reference
         book = new Book();
+        book.setActive(true);
         book.setId(5L);
         book.setBookName("TestBookC");
 
-        tradeDTO.setBookId(book.getId());
-        tradeDTO.setBookName(book.getBookName());
-
         // Counterparty Reference
         counterparty = new Counterparty();
+        counterparty.setActive(true);
         counterparty.setId(7L);
         counterparty.setName("TestCounterpartyC");
-
-        tradeDTO.setCounterpartyId(counterparty.getId());
-        tradeDTO.setCounterpartyName(counterparty.getName());
 
         // Trade Status Reference
         tradeStatus = new TradeStatus();
         tradeStatus.setId(9L);
         tradeStatus.setTradeStatus("NEW");
-
-        tradeDTO.setTradeStatusId(tradeStatus.getId());
-        tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
 
         // Schedule Reference
         schedule = new Schedule();
@@ -187,13 +179,33 @@ class TradeServiceTest {
         leg1.setLegId(3L);
         leg1.setNotional(BigDecimal.valueOf(1000000));
         leg1.setRate(0.05);
+        leg1.setCurrencyId(2L);
+        leg1.setCurrency("USD");
         leg1.setCalculationPeriodSchedule("1M");
+        leg1.setHolidayCalendarId(1L);
+        leg1.setHolidayCalendar("NY");
+        leg1.setPayRecId(2L);
+        leg1.setPayReceiveFlag("Pay");
+        leg1.setPaymentBdcId(2L);
+        leg1.setPaymentBusinessDayConvention("Following");
+        leg1.setFixingBdcId(4L);
+        leg1.setFixingBusinessDayConvention("Following");
 
         leg2 = new TradeLegDTO();
         leg2.setLegId(4L);
         leg2.setNotional(BigDecimal.valueOf(1000000));
         leg2.setRate(0.05);
+        leg2.setCurrencyId(2L);
+        leg2.setCurrency("USD");
         leg2.setCalculationPeriodSchedule("1M");
+        leg2.setHolidayCalendarId(1L);
+        leg2.setHolidayCalendar("NY");
+        leg2.setPayRecId(2L);
+        leg2.setPayReceiveFlag("Recieve");
+        leg2.setPaymentBdcId(2L);
+        leg2.setPaymentBusinessDayConvention("Following");
+        leg2.setFixingBdcId(4L);
+        leg2.setFixingBusinessDayConvention("Following");
 
         tradeleg1 = new TradeLeg();
         tradeleg1.setLegId(1L);
@@ -224,8 +236,43 @@ class TradeServiceTest {
         tradeleg1.setCashflows(cashflowList1);
         tradeleg2.setCashflows(cashflowList2);
 
+        // TradeDTO - DTO
+        tradeDTO = new TradeDTO();
+        tradeDTO.setTradeId(100001L);
+        tradeDTO.setVersion(1);
+        tradeDTO.setActive(true);
+        tradeDTO.setTradeDate(LocalDate.of(2025, 1, 15));
+        tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
+        tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
+        tradeDTO.setTradeStatusId(tradeStatus.getId());
+        tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
+        tradeDTO.setCounterpartyId(counterparty.getId());
+        tradeDTO.setCounterpartyName(counterparty.getName());
+        tradeDTO.setBookId(book.getId());
+        tradeDTO.setBookName(book.getBookName());
+
+        // Trade - Entity
+        trade = new Trade();
+        trade.setId(1L);
+        trade.setTradeId(100001L);
+        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade.setBook(book);
+        trade.setCounterparty(counterparty);
+        trade.setTradeStatus(tradeStatus);
+        trade.setVersion(1);
+
         trade.setTradeLegs(List.of(tradeleg2, tradeleg2));
         tradeDTO.setTradeLegs(List.of(leg1, leg2));
+
+    }
+
+    // ! WILL IMPLEMENT ! for most tests to clean up and reduce amount of code !
+    private void missingMockedStubs() {
+        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
+        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
+        when(tradeStatusRepository.findByTradeStatus("NEW"))
+                .thenReturn(Optional.of(tradeStatus));
 
     }
 
@@ -542,8 +589,8 @@ class TradeServiceTest {
 
         // When - A InvalidSearchCriteriaException is thrown and assertThrows returns
         // the exception
-        InvalidSearchCriteriaException invalidSearchCriteriaException = assertThrows(
-                InvalidSearchCriteriaException.class,
+        InvalidSearchException invalidSearchCriteriaException = assertThrows(
+                InvalidSearchException.class,
                 () -> {
                     tradeService.getAllTradesByCriteria(criteriaSearch);
                 });
@@ -602,14 +649,14 @@ class TradeServiceTest {
 
         // When - A InvalidRsqlQueryException is thrown and assertThrows returns
         // the exception
-        InvalidRsqlQueryException invalidRsqlQueryException = assertThrows(
-                InvalidRsqlQueryException.class,
+        InvalidSearchException invalidSearchException = assertThrows(
+                InvalidSearchException.class,
                 () -> {
                     tradeService.getAllTradesByRSQL(query);
                 });
 
         // Then - Verifies the exception was thrown.
-        assertEquals("Query must not be null or empty", invalidRsqlQueryException.getMessage());
+        assertEquals("Query must not be null or empty", invalidSearchException.getMessage());
     }
 
     /**
@@ -790,4 +837,92 @@ class TradeServiceTest {
         assertEquals(0, result.getTotalElements()); // 0 trades
         verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(), any(Pageable.class));
     }
+
+    /**
+     * Tests if business rules validation validates
+     */
+    @Test
+    void testCreateTradeValidationResult_Success() {
+
+        // Given - Validation Result & mocked both validation methods, saving a
+        // trade and tradelegs
+        missingMockedStubs();
+
+        ValidationResult validResult = ValidationResult.isValid();
+
+        when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(validResult);
+        when(tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs())).thenReturn(validResult);
+
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
+        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeleg1, tradeleg2);
+
+        // When - createTrade method call
+        tradeService.populateReferenceDataByName(trade, tradeDTO);
+        Trade result = tradeService.createTrade(tradeDTO);
+
+        // Then - Verifies the trade was created and there was no errors
+        assertNotNull(result);
+        verify(tradeValidator).validateTradeBusinessRules(tradeDTO);
+        verify(tradeValidator).validateTradeLegConsistency(tradeDTO.getTradeLegs());
+
+    }
+
+    /**
+     * Tests if business rules validation throws a exception
+     */
+    @Test
+    void testCreateTradeValidationBusinessRules_ShouldFail() {
+
+        // Given - List of errors, validation result & mocked stubbing
+        List<String> errors = new ArrayList<>();
+        errors.add("Start date cannot be before trade date");
+
+        ValidationResult inValidResult = ValidationResult.isNotValid(errors);
+        when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(inValidResult);
+
+        // When - A ValidationException is thrown and assertThrows returns the exception
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            tradeService.createTrade(tradeDTO);
+        });
+
+        // Then - Verifies the exception was thrown
+        assertEquals("Start date cannot be before trade date", exception.getErrors().get(0));
+        assertEquals(1, exception.getErrors().size());
+        verify(tradeRepository, never()).save(any());
+    }
+
+    /**
+     * Tests if cross leg validation throws a exception
+     */
+    @Test
+    void testCreateTradeCrossLegValidation_ShouldFail() {
+
+        // Given - List of errors, validation result & mocked stubbing
+
+        List<String> errors = new ArrayList<>();
+        errors.add("Floating legs must have an index specified");
+        errors.add("Fixed legs must have a valid rate");
+
+        ValidationResult validResult = ValidationResult.isValid();
+        ValidationResult inValidResult = ValidationResult.isNotValid(errors);
+
+        // Mocked validation of both validation results one has valid results and one
+        // has invalid results
+        when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(validResult);
+        when(tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs())).thenReturn(inValidResult);
+
+        // When - A ValidationException is thrown and assertThrows returns the
+        // exceptions
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            tradeService.createTrade(tradeDTO);
+        });
+
+        // Then - Verifies the exception was thrown
+        assertEquals("Floating legs must have an index specified", exception.getErrors().get(0));
+        assertEquals("Fixed legs must have a valid rate", exception.getErrors().get(1));
+        assertEquals(2, exception.getErrors().size());
+        verify(tradeRepository, never()).save(any());
+
+    }
+
 }

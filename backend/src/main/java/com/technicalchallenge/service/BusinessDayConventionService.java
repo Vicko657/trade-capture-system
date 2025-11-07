@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,24 @@ public class BusinessDayConventionService {
     public Optional<BusinessDayConvention> findById(Long id) {
         logger.debug("Retrieving business day convention by id: {}", id);
         return businessDayConventionRepository.findById(id);
+    }
+
+    public Optional<BusinessDayConvention> findByBDC(String bDC) {
+        logger.debug("Retrieving business day convention by bdc: {}", bDC);
+        return businessDayConventionRepository.findByBdc(bDC);
+    }
+
+    public void validateBusinessDayConvention(Long id, String bDC) {
+
+        if (id != null && bDC != null) {
+
+            if (findById(id).isEmpty()) {
+                throw new EntityNotFoundException("BusinessDayConvention not found by id");
+            } else if (findByBDC(bDC).isEmpty()) {
+                throw new EntityNotFoundException("BusinessDayConvention not found by BDC");
+            }
+        }
+
     }
 
     public BusinessDayConvention save(BusinessDayConvention businessDayConvention) {

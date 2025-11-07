@@ -5,11 +5,13 @@ import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.exceptions.InvalidRsqlQueryException;
-import com.technicalchallenge.exceptions.InvalidSearchCriteriaException;
+import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
 import com.technicalchallenge.specification.TradeSpecification;
+import com.technicalchallenge.validation.TradeValidator;
+import com.technicalchallenge.validation.ValidationResult;
 
 import io.github.perplexhub.rsql.RSQLJPASupport;
 
@@ -70,115 +72,50 @@ public class TradeService {
     private PayRecRepository payRecRepository;
     @Autowired
     private AdditionalInfoService additionalInfoService;
+    @Autowired
+    private TradeValidator tradeValidator;
+    @Autowired
+    private AuthorizationService authorizationService;
 
-    // Filtered Search - Multi Criteria By counterparty, book, trader, status, date
-    // ranges, paginated filtering and sorting for all trades
-    public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
-            SortDTO sortFields) {
-
-        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
-
-        // Validate date range for tradeDate - if the end date is before the start date
-        // the exception is thrown
-        if (searchTradeByCriteria.tradeStartDate() != null && searchTradeByCriteria.tradeEndDate() != null
-                && searchTradeByCriteria.tradeEndDate().isBefore(searchTradeByCriteria.tradeStartDate())) {
-            throw new InvalidSearchCriteriaException("End date cannot be before start date");
-        }
-
-        logger.debug("Search validation passed to find trade");
-
-        // Sort - Sort the trades by column name and in order of ASC or DESC, handles if
-        // the sort direction is not filled
-
-        String sortColumn;
-        String sortDirection = sortFields.sortDir(); // Default is ASC
-
-        if (sortFields.sortBy() == null || sortFields.sortBy().isBlank()) {
-            sortColumn = "tradeId"; // Default is tradeID
-        } else {
-            sortColumn = sortFields.sortBy();
-        }
-
-        Sort sort = null;
-        if (sortDirection == null) {
-            sort = Sort.unsorted();
-        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
-            sort = Sort.by(sortColumn).ascending();
-        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.DESC.name())) {
-            sort = Sort.by(sortColumn).descending();
-        }
-
-        // Pagination - Includes a sorted, unsorted page request for the user to be able
-        // to seperately sort or change the pagination
-        Integer pageNo = pagination.pageNo();
-        Integer pageSize = pagination.pageSize();
-
-        Pageable pageable;
-        if (pagination.pageNo() != null && pageSize != null && pageNo > 0 && sort != null) {
-            // Pageable: Page Request with sort parameters applied (Page details and sort
-            // details are not null)
-            pageable = PageRequest.of(pageNo - 1, pageSize, sort);
-        } else if (sort == null) {
-            // Pageable: Unsorted page request (With the page details, if the sort is
-            // null)
-            pageable = PageRequest.of(pageNo - 1, pageSize);
-        } else {
-            // Pageable: No pagination setup and seperates the filtered criteria search
-            pageable = Pageable.unpaged();
-        }
-
-        // Filtered - Multi Criteria Search
-        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-        return tradeRepository.findAll(specification, pageable);
-    }
-
-    // RSQL Search - The RSQL plugin automatically builds the JPA specification with
-    // less code and provides filtering support for power users.
-
-    public List<Trade> getAllTradesByRSQL(String query) {
-        logger.info("Retrieving all trades by rsql: {}", query);
-
-        // Validate query - if the query is null or missing the exception is thrown
-        if (query == null || query.isEmpty()) {
-            throw new InvalidRsqlQueryException("Query must not be null or empty");
-        }
-
-        logger.debug("Query validation passed to find trade");
-        Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
-        return tradeRepository.findAll(specfication);
-    }
-
-    // Multi Criteria Search - By counterparty, book, trader, status, date ranges
-    public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
-
-        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
-
-        // Validate date range for tradeDate - if the end date is before the start date
-        // the exception is thrown
-        if (searchTradeByCriteria.tradeStartDate() != null && searchTradeByCriteria.tradeEndDate() != null
-                && searchTradeByCriteria.tradeEndDate().isBefore(searchTradeByCriteria.tradeStartDate())) {
-            throw new InvalidSearchCriteriaException("End date cannot be before start date");
-        }
-
-        logger.debug("Search validation passed to find trade");
-
-        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-        return tradeRepository.findAll(specification);
-    }
+    @Autowired
+    private TradeMapper tradeMapper;
 
     public List<Trade> getAllTrades() {
         logger.info("Retrieving all trades");
+
+        Long userId = authorizationService.getCurrentUserId();
+        authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
+
         return tradeRepository.findAll();
+
     }
 
-    public Optional<Trade> getTradeById(Long tradeId) {
+    public Trade getTradeById(Long tradeId) {
         logger.debug("Retrieving trade by id: {}", tradeId);
-        return tradeRepository.findByTradeIdAndActiveTrue(tradeId);
+
+        Long userId = authorizationService.getCurrentUserId();
+        authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
+
+        return tradeRepository.findByTradeIdAndActiveTrue(tradeId)
+                .orElseThrow(() -> new EntityNotFoundException("Trade not found:" + tradeId));
+
     }
 
     @Transactional
     public Trade createTrade(TradeDTO tradeDTO) {
         logger.info("Creating new trade with ID: {}", tradeDTO.getTradeId());
+
+        // Validates User - Create Trade
+        Long userId = authorizationService.getCurrentUserId();
+        authorizationService.validateUserPrivileges(userId, "CREATE_TRADE", tradeDTO);
+
+        // Validate trade business rules
+        ValidationResult tradeBusinessValidation = tradeValidator.validateTradeBusinessRules(tradeDTO);
+        tradeBusinessValidation.throwifNotValid();
+
+        // Validate cross legs rules
+        ValidationResult tradeCrossLegValidation = tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs());
+        tradeCrossLegValidation.throwifNotValid();
 
         // Generate trade ID if not provided
         if (tradeDTO.getTradeId() == null) {
@@ -187,9 +124,6 @@ public class TradeService {
             tradeDTO.setTradeId(generatedTradeId);
             logger.info("Generated trade ID: {}", generatedTradeId);
         }
-
-        // Validate business rules
-        validateTradeCreation(tradeDTO);
 
         // Create trade entity
         Trade trade = mapDTOToEntity(tradeDTO);
@@ -205,9 +139,6 @@ public class TradeService {
 
         // Populate reference data
         populateReferenceDataByName(trade, tradeDTO);
-
-        // Ensure we have essential reference data
-        validateReferenceData(trade);
 
         Trade savedTrade = tradeRepository.save(trade);
 
@@ -373,14 +304,15 @@ public class TradeService {
 
     @Transactional
     public Trade amendTrade(Long tradeId, TradeDTO tradeDTO) {
+
         logger.info("Amending trade with ID: {}", tradeId);
 
-        Optional<Trade> existingTradeOpt = getTradeById(tradeId);
-        if (existingTradeOpt.isEmpty()) {
-            throw new RuntimeException("Trade not found: " + tradeId);
-        }
+        // Validates User - Amend Trade
 
-        Trade existingTrade = existingTradeOpt.get();
+        Long userId = authorizationService.getCurrentUserId();
+        authorizationService.validateUserPrivileges(userId, "AMEND_TRADE", tradeDTO);
+
+        Trade existingTrade = getTradeById(tradeId);
 
         // Deactivate existing trade
         existingTrade.setActive(false);
@@ -400,7 +332,7 @@ public class TradeService {
 
         // Set status to AMENDED
         TradeStatus amendedStatus = tradeStatusRepository.findByTradeStatus("AMENDED")
-                .orElseThrow(() -> new RuntimeException("AMENDED status not found"));
+                .orElseThrow(() -> new EntityNotFoundException("AMENDED status not found"));
         amendedTrade.setTradeStatus(amendedStatus);
 
         Trade savedTrade = tradeRepository.save(amendedTrade);
@@ -416,14 +348,15 @@ public class TradeService {
     public Trade terminateTrade(Long tradeId) {
         logger.info("Terminating trade with ID: {}", tradeId);
 
-        Optional<Trade> tradeOpt = getTradeById(tradeId);
-        if (tradeOpt.isEmpty()) {
-            throw new RuntimeException("Trade not found: " + tradeId);
-        }
+        Trade trade = getTradeById(tradeId);
 
-        Trade trade = tradeOpt.get();
+        // Validates User - Terminate Trade
+        TradeDTO tradeDTO = tradeMapper.toDto(trade);
+        Long userId = authorizationService.getCurrentUserId();
+        authorizationService.validateUserPrivileges(userId, "TERMINATE_TRADE", tradeDTO);
+
         TradeStatus terminatedStatus = tradeStatusRepository.findByTradeStatus("TERMINATED")
-                .orElseThrow(() -> new RuntimeException("TERMINATED status not found"));
+                .orElseThrow(() -> new EntityNotFoundException("TERMINATED status not found"));
 
         trade.setTradeStatus(terminatedStatus);
         trade.setLastTouchTimestamp(LocalDateTime.now());
@@ -433,40 +366,23 @@ public class TradeService {
 
     @Transactional
     public Trade cancelTrade(Long tradeId) {
+
         logger.info("Cancelling trade with ID: {}", tradeId);
 
-        Optional<Trade> tradeOpt = getTradeById(tradeId);
-        if (tradeOpt.isEmpty()) {
-            throw new RuntimeException("Trade not found: " + tradeId);
-        }
+        Trade trade = getTradeById(tradeId);
 
-        Trade trade = tradeOpt.get();
+        // Validates User - Cancel Trade
+        TradeDTO tradeDTO = tradeMapper.toDto(trade);
+        Long userId = authorizationService.getCurrentUserId();
+        authorizationService.validateUserPrivileges(userId, "CANCEL_TRADE", tradeDTO);
+
         TradeStatus cancelledStatus = tradeStatusRepository.findByTradeStatus("CANCELLED")
-                .orElseThrow(() -> new RuntimeException("CANCELLED status not found"));
+                .orElseThrow(() -> new EntityNotFoundException("CANCELLED status not found"));
 
         trade.setTradeStatus(cancelledStatus);
         trade.setLastTouchTimestamp(LocalDateTime.now());
 
         return tradeRepository.save(trade);
-    }
-
-    private void validateTradeCreation(TradeDTO tradeDTO) {
-        // Validate dates - Fixed to use consistent field names
-        if (tradeDTO.getTradeStartDate() != null && tradeDTO.getTradeDate() != null) {
-            if (tradeDTO.getTradeStartDate().isBefore(tradeDTO.getTradeDate())) {
-                throw new RuntimeException("Start date cannot be before trade date");
-            }
-        }
-        if (tradeDTO.getTradeMaturityDate() != null && tradeDTO.getTradeStartDate() != null) {
-            if (tradeDTO.getTradeMaturityDate().isBefore(tradeDTO.getTradeStartDate())) {
-                throw new RuntimeException("Maturity date cannot be before start date");
-            }
-        }
-
-        // Validate trade has exactly 2 legs
-        if (tradeDTO.getTradeLegs() == null || tradeDTO.getTradeLegs().size() != 2) {
-            throw new RuntimeException("Trade must have exactly 2 legs");
-        }
     }
 
     private Trade mapDTOToEntity(TradeDTO dto) {
@@ -687,19 +603,84 @@ public class TradeService {
         return BigDecimal.ZERO;
     }
 
-    private void validateReferenceData(Trade trade) {
-        // Validate essential reference data is populated
-        if (trade.getBook() == null) {
-            throw new RuntimeException("Book not found or not set");
-        }
-        if (trade.getCounterparty() == null) {
-            throw new RuntimeException("Counterparty not found or not set");
-        }
-        if (trade.getTradeStatus() == null) {
-            throw new RuntimeException("Trade status not found or not set");
+    // Filtered Search - Multi Criteria By counterparty, book, trader, status, date
+    // ranges, paginated filtering and sorting for all trades
+    public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
+            SortDTO sortFields) {
+
+        tradeValidator.validateSearch(searchTradeByCriteria);
+        logger.debug("Search validation passed to find trade");
+
+        // Sort - Sort the trades by column name and in order of ASC or DESC, handles if
+        // the sort direction is not filled
+
+        String sortColumn;
+        String sortDirection = sortFields.sortDir(); // Default is ASC
+
+        if (sortFields.sortBy() == null || sortFields.sortBy().isBlank()) {
+            sortColumn = "tradeId"; // Default is tradeID
+        } else {
+            sortColumn = sortFields.sortBy();
         }
 
-        logger.debug("Reference data validation passed for trade");
+        Sort sort = null;
+        if (sortDirection == null) {
+            sort = Sort.unsorted();
+        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
+            sort = Sort.by(sortColumn).ascending();
+        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.DESC.name())) {
+            sort = Sort.by(sortColumn).descending();
+        }
+
+        // Pagination - Includes a sorted, unsorted page request for the user to be able
+        // to seperately sort or change the pagination
+        Integer pageNo = pagination.pageNo();
+        Integer pageSize = pagination.pageSize();
+
+        Pageable pageable;
+        if (pagination.pageNo() != null && pageSize != null && pageNo > 0 && sort != null) {
+            // Pageable: Page Request with sort parameters applied (Page details and sort
+            // details are not null)
+            pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        } else if (sort == null) {
+            // Pageable: Unsorted page request (With the page details, if the sort is
+            // null)
+            pageable = PageRequest.of(pageNo - 1, pageSize);
+        } else {
+            // Pageable: No pagination setup and seperates the filtered criteria search
+            pageable = Pageable.unpaged();
+        }
+
+        // Filtered - Multi Criteria Search
+        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
+        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
+
+        return tradeRepository.findAll(specification, pageable);
+    }
+
+    // RSQL Search - The RSQL plugin automatically builds the JPA specification with
+    // less code and provides filtering support for power users.
+
+    public List<Trade> getAllTradesByRSQL(String query) {
+
+        tradeValidator.validateRSQLSearch(query);
+        logger.debug("Query validation passed to find trade");
+
+        Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
+        logger.info("Retrieving all trades by rsql: {}", query);
+        return tradeRepository.findAll(specfication);
+    }
+
+    // Multi Criteria Search - By counterparty, book, trader, status, date ranges
+    public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
+
+        tradeValidator.validateSearch(searchTradeByCriteria);
+        logger.debug("Search validation passed to find trade");
+
+        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
+        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
+
+        return tradeRepository.findAll(specification);
     }
 
     // NEW METHOD: Generate the next trade ID (sequential)
@@ -708,4 +689,5 @@ public class TradeService {
         // atomic and thread-safe.
         return 10000L + tradeRepository.count();
     }
+
 }
