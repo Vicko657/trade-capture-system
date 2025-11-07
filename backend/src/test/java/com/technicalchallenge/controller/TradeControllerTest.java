@@ -20,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -282,7 +281,7 @@ public class TradeControllerTest {
         @Test
         void testGetTradeById() throws Exception {
                 // Given
-                when(tradeService.getTradeById(1001L)).thenReturn(Optional.of(trade));
+                when(tradeService.getTradeById(1001L)).thenReturn(trade);
 
                 // When/Then
                 mockMvc.perform(get("/api/trades/1001")
@@ -298,7 +297,7 @@ public class TradeControllerTest {
         @Test
         void testGetTradeByIdNotFound() throws Exception {
                 // Given
-                when(tradeService.getTradeById(9999L)).thenReturn(Optional.empty());
+                when(tradeService.getTradeById(9999L)).thenReturn(null);
 
                 // When/Then
                 mockMvc.perform(get("/api/trades/9999")

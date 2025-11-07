@@ -1,4 +1,5 @@
 package com.technicalchallenge.service;
+
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.model.LegType;
 import com.technicalchallenge.model.Trade;
@@ -12,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

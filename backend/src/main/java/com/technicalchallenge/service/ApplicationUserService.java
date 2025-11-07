@@ -36,18 +36,24 @@ public class ApplicationUserService {
         ApplicationUser user = applicationUserRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found by id" + id));
 
+        // Checks if user is active
+        if (!user.isActive()) {
+            throw new InActiveException("User must be active");
+        }
+
         return user;
     }
 
     public ApplicationUser getUserByUserName(String userName) {
         logger.debug("Retrieving user by userName: {}", userName);
         return applicationUserRepository.findByFirstName(userName)
-                .orElseThrow(() -> new EntityNotFoundException("User not found by firstName" + userName));
+                .orElseThrow(() -> new EntityNotFoundException("User not found by userName" + userName));
     }
 
-    public Optional<ApplicationUser> getUserByLoginId(String loginId) {
+    public ApplicationUser getUserByLoginId(String loginId) {
         logger.debug("Retrieving user by login id: {}", loginId);
-        return applicationUserRepository.findByLoginId(loginId);
+        return applicationUserRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found by loginId" + loginId));
     }
 
     public ApplicationUser saveUser(ApplicationUser user) {
