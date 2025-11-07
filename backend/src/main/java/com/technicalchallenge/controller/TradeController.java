@@ -35,6 +35,9 @@ import org.slf4j.LoggerFactory;
  * Rest Controller for all trade management.
  * 
  * API endpoints to complete CRUD operations.
+ * 
+ * Also has the Role based authorities which were implemented by Spring Security
+ * and persisted into the data base
  */
 @RestController
 @RequestMapping("/api/trades")
