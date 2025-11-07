@@ -33,6 +33,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Trade service class provides business logic and operations relating
+ * to trading CRUD operations and search functionalities.
+ * 
+ * - Get, Create, Amend, Delete, Terminate and Cancel Trades
+ * - RSQL, Filtered search and a muilti criteria
+ * 
+ *
+ * FUTURE: Work on refactoring the trade service, by making sure all the
+ * services handle their own business logic.
+ * 
+ * The trade service is tightly coupled, which makes the code very
+ * long and repetitive by using direct repositories. I decided to add the
+ * validations for the reference data in their own individual services called in
+ * the {@link TradeValidator}.
+ * 
+ * Due to time constraints, I continued to use the Optional objects, so the code
+ * will not be broken where its implemented in other classes.
+ *
+ */
 @Service
 @Transactional
 public class TradeService {
@@ -80,27 +100,79 @@ public class TradeService {
     @Autowired
     private TradeMapper tradeMapper;
 
+    /**
+     * Trade: Return all trades that have been created on the system
+     * 
+     * Privilege: READ TRADE
+     * 
+     * @return all trades
+     */
     public List<Trade> getAllTrades() {
+
         logger.info("Retrieving all trades");
 
         Long userId = authorizationService.getCurrentUserId();
-        authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
+
+        authorizationService.validateUserPrivileges(userId, "READ_TRADE", null);
 
         return tradeRepository.findAll();
-
     }
 
+    /**
+     * Trade: Returns a trade with a tradeId
+     * 
+     * <p>
+     * Used to access a specific trade in the trading application.
+     * 
+     * Exception thrown if trade is not found.
+     * {@link EntityNotFoundException}
+     * </p>
+     * 
+     * Privilege: READ TRADE
+     * 
+     * @param tradeId trade unique identifier
+     * @return a single trade
+     */
     public Trade getTradeById(Long tradeId) {
+
         logger.debug("Retrieving trade by id: {}", tradeId);
 
         Long userId = authorizationService.getCurrentUserId();
-        authorizationService.validateUserPrivileges(userId, "VIEW_TRADE", null);
+
+        authorizationService.validateUserPrivileges(userId, "READ_TRADE", null);
 
         return tradeRepository.findByTradeIdAndActiveTrue(tradeId)
-                .orElseThrow(() -> new EntityNotFoundException("Trade not found:" + tradeId));
+                .orElseThrow(() -> new EntityNotFoundException("Trade not found: " + tradeId));
 
     }
 
+    /**
+     * Trade: Create's Trades
+     * 
+     * <p>
+     * Creates a trade entity using mapping with the dto.
+     * 
+     * Also creates the tradelegs and generates cashflows.
+     * cashflows.
+     * 
+     * Privilege: CREATE TRADE
+     * 
+     * Validation was implemented for: User privileges,
+     * Trade Buisness rules and Cross leg Rules
+     * 
+     * Using {@link TradeValidator} {@link AuthorizationService}
+     * </p>
+     * 
+     * 
+     * 
+     * FUTURE: Would utilise the trademapper fully in the service
+     * to map to the entity and back to the dto, to remove repetitive code.
+     * Would fix the cashflows generation bug, when creating
+     * a trade multiple (100s) cashflows were generated.
+     * 
+     * @param tradeDTO trade's data object
+     * @return a trade entity with tradelegs and cashflows
+     */
     @Transactional
     public Trade createTrade(TradeDTO tradeDTO) {
         logger.info("Creating new trade with ID: {}", tradeDTO.getTradeId());
@@ -302,15 +374,28 @@ public class TradeService {
         cancelTrade(tradeId);
     }
 
+    /**
+     * Trade: Amends the trade
+     * 
+     * <p>
+     * Modifiys and updates a exisiting trade's details and
+     * creates a different version.
+     * 
+     * Privilege: AMEND TRADE
+     * </p>
+     * 
+     * @param tradeId  trade unique identifier
+     * @param tradeDTO trade data object
+     * @return A new version of the trade
+     */
     @Transactional
     public Trade amendTrade(Long tradeId, TradeDTO tradeDTO) {
 
         logger.info("Amending trade with ID: {}", tradeId);
 
         // Validates User - Amend Trade
-
         Long userId = authorizationService.getCurrentUserId();
-        authorizationService.validateUserPrivileges(userId, "AMEND_TRADE", tradeDTO);
+        authorizationService.validateUserPrivileges(userId, " AMEND_TRADE", tradeDTO);
 
         Trade existingTrade = getTradeById(tradeId);
 
@@ -344,6 +429,18 @@ public class TradeService {
         return savedTrade;
     }
 
+    /**
+     * Trade: Terminating a trade
+     * 
+     * <p>
+     * Ends the trade's lifecycle
+     * </p>
+     * 
+     * Privilege: TERMINATE TRADE
+     * 
+     * @param tradeId trade unique identifier
+     * @return Updates last touch timestamp and updates tradeStatus
+     */
     @Transactional
     public Trade terminateTrade(Long tradeId) {
         logger.info("Terminating trade with ID: {}", tradeId);
@@ -364,6 +461,16 @@ public class TradeService {
         return tradeRepository.save(trade);
     }
 
+    /**
+     * Trade: Cancels trade
+     * 
+     * <p>
+     * Cancels trade's unfulfilled order
+     * </p>
+     * 
+     * @param tradeId trade unique identifier
+     * @return new status and updated timestamp
+     */
     @Transactional
     public Trade cancelTrade(Long tradeId) {
 
@@ -603,17 +710,34 @@ public class TradeService {
         return BigDecimal.ZERO;
     }
 
-    // Filtered Search - Multi Criteria By counterparty, book, trader, status, date
-    // ranges, paginated filtering and sorting for all trades
+    /**
+     * Trade: Filtered Search
+     * 
+     * <p>
+     * Multi Criteria By counterparty, book, trader, status, date
+     * ranges, paginated filtering and sorting for all trades
+     * 
+     * - Sorts the trades by column name and in order of ASC or DESC,
+     * handles if the sort direction is not filled
+     * 
+     * - Includes a sorted, unsorted page request for the user to
+     * be able to seperately sort or change the pagination
+     * 
+     * </p>
+     * 
+     * @param SearchTradeByCriteria JPA Specification Search
+     * @param PaginationDTO         Custom pagination
+     * @param SortDTO               Custom sort
+     * @return returns filtered search results
+     */
     public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
             SortDTO sortFields) {
 
         tradeValidator.validateSearch(searchTradeByCriteria);
+
         logger.debug("Search validation passed to find trade");
 
-        // Sort - Sort the trades by column name and in order of ASC or DESC, handles if
-        // the sort direction is not filled
-
+        // Sort By
         String sortColumn;
         String sortDirection = sortFields.sortDir(); // Default is ASC
 
@@ -632,35 +756,53 @@ public class TradeService {
             sort = Sort.by(sortColumn).descending();
         }
 
-        // Pagination - Includes a sorted, unsorted page request for the user to be able
-        // to seperately sort or change the pagination
+        // Pagination
+
         Integer pageNo = pagination.pageNo();
         Integer pageSize = pagination.pageSize();
-
         Pageable pageable;
+
         if (pagination.pageNo() != null && pageSize != null && pageNo > 0 && sort != null) {
-            // Pageable: Page Request with sort parameters applied (Page details and sort
-            // details are not null)
+
+            // Page Request with sort parameters applied (Page details and sort details are
+            // not null)
+
             pageable = PageRequest.of(pageNo - 1, pageSize, sort);
         } else if (sort == null) {
-            // Pageable: Unsorted page request (With the page details, if the sort is
-            // null)
+
+            // Unsorted page request (With the page details, if the sort is null)
+
             pageable = PageRequest.of(pageNo - 1, pageSize);
         } else {
-            // Pageable: No pagination setup and seperates the filtered criteria search
+
+            // No pagination setup and seperates the filtered criteria search
+
             pageable = Pageable.unpaged();
         }
 
-        // Filtered - Multi Criteria Search
+        // Filtered multi criteria search
+
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
+
         logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
 
         return tradeRepository.findAll(specification, pageable);
     }
 
-    // RSQL Search - The RSQL plugin automatically builds the JPA specification with
-    // less code and provides filtering support for power users.
-
+    /**
+     * Trade: RSQL Search
+     * 
+     * <p>
+     * The RSQL plugin automatically builds the JPA specification with
+     * less code and provides filtering support for power users.
+     * 
+     * Used the plugin recommended which saved time:
+     * {@link https://github.com/perplexhub/rsql-jpa-specification}
+     * </p>
+     * 
+     * @param query trade unique identifier
+     * @return powerful results
+     */
     public List<Trade> getAllTradesByRSQL(String query) {
 
         tradeValidator.validateRSQLSearch(query);
@@ -671,7 +813,20 @@ public class TradeService {
         return tradeRepository.findAll(specfication);
     }
 
-    // Multi Criteria Search - By counterparty, book, trader, status, date ranges
+    /**
+     * Trade: Multi Criteria Search
+     * 
+     * <p>
+     * By counterparty, book, trader, status, date ranges
+     * </p>
+     * 
+     * 
+     * FUTURE: Refactor to a much simplier search using aggregated
+     * queries, wasn't initially sure of how complex the search should've been.
+     * 
+     * @param SearchTradeByCriteria trade unique identifier
+     * @return search results
+     */
     public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
 
         tradeValidator.validateSearch(searchTradeByCriteria);
