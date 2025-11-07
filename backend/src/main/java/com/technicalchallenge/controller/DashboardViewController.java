@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,10 +41,12 @@ public class DashboardViewController {
         @Operation(summary = "Get the trader's personal trades view", description = "Retrieves all the user's trades.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's trades", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeSummaryDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "User's access denied"),
                         @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
                         @ApiResponse(responseCode = "500", description = "Internal server error")
         })
         @GetMapping("/my-trades")
+        @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
         public ResponseEntity<TradeSummaryDTO> getTraderDashboard(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails,
                         Pageable pageable) {
@@ -56,10 +59,12 @@ public class DashboardViewController {
         @Operation(summary = "Get the trader's portfolio summaries view", description = "Retrieves the trader's portfolio summary including the total notional amounts by currency, total number of trades by status, breakdowns by trade type and counterparties and risk exposure.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's trade summary", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeSummaryDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "User's access denied"),
                         @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
                         @ApiResponse(responseCode = "500", description = "Internal server error")
         })
         @GetMapping("/summary")
+        @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
         public ResponseEntity<TradeSummaryDTO> getPortfolioSummaries(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails) {
                 String username = userDetails.getUsername();
@@ -71,10 +76,12 @@ public class DashboardViewController {
         @Operation(summary = "Get the trader's book level activities view", description = "Retrieves the trader's book level activities view including book-level trade aggregation.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's book level activity", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DailySummaryDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "User's access denied"),
                         @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
                         @ApiResponse(responseCode = "500", description = "Internal server error")
         })
         @GetMapping("/book/{id}/trades")
+        @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
         public ResponseEntity<DailySummaryDTO> getBookActivites(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails,
                         @PathVariable("id") Long id) {
@@ -88,10 +95,12 @@ public class DashboardViewController {
         @Operation(summary = "Get the trader's daily trading statistics view", description = "Retrieves the trader's daily summary including the daily summaried statistics and comparison to previous trading days.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved all the user's daily trading statistics", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DailySummaryDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "User's access denied"),
                         @ApiResponse(responseCode = "204", description = "No Data for Dashboard is found"),
                         @ApiResponse(responseCode = "500", description = "Internal server error")
         })
         @GetMapping("/daily-summary")
+        @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
         public ResponseEntity<DailySummaryDTO> getDailyTradingStatistics(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails) {
 
