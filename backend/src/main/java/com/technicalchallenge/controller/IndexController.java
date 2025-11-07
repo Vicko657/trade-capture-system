@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.IndexDTO;
 import com.technicalchallenge.mapper.IndexMapper;
 import com.technicalchallenge.model.Index;
 import com.technicalchallenge.service.IndexService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/indices")
+@Tag(name = "Index", description = "Benchmark measure that tracks value or the performance of a market")
 public class IndexController {
     private static final Logger logger = LoggerFactory.getLogger(IndexController.class);
 

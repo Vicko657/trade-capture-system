@@ -2,6 +2,9 @@ package com.technicalchallenge.controller;
 
 import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.service.BusinessDayConventionService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/businessDayConventions")
+@Tag(name = "BusinessDayConventionController", description = "Adjusts scheduled dates to the correct business day for tradelegs")
 public class BusinessDayConventionController {
     private static final Logger logger = LoggerFactory.getLogger(BusinessDayConventionController.class);
 
@@ -40,7 +44,8 @@ public class BusinessDayConventionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BusinessDayConvention> update(@PathVariable Long id, @RequestBody BusinessDayConvention businessDayConvention) {
+    public ResponseEntity<BusinessDayConvention> update(@PathVariable Long id,
+            @RequestBody BusinessDayConvention businessDayConvention) {
         return businessDayConventionService.findById(id)
                 .map(existing -> {
                     businessDayConvention.setId(id);

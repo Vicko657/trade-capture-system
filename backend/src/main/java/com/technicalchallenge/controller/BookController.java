@@ -1,9 +1,10 @@
 package com.technicalchallenge.controller;
 
 import com.technicalchallenge.dto.BookDTO;
-import com.technicalchallenge.mapper.BookMapper;
-import com.technicalchallenge.model.Book;
 import com.technicalchallenge.service.BookService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +20,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/books")
 @Validated
+@Tag(name = "Books", description = "Book management for trades")
 public class BookController {
     private static final Logger logger = LoggerFactory.getLogger(BookController.class);
 
     @Autowired
     private BookService bookService;
-
 
     @GetMapping
     public ResponseEntity<List<BookDTO>> getAllBooks() {
@@ -60,7 +60,6 @@ public class BookController {
         bookService.deleteBook(id);
         return ResponseEntity.noContent().build();
     }
-
 
     @GetMapping("/values")
     public List<String> getAllBookNames() {

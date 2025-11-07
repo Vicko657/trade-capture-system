@@ -3,6 +3,9 @@ package com.technicalchallenge.controller;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.mapper.TradeLegMapper;
 import com.technicalchallenge.service.TradeLegService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -18,6 +21,7 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/tradeLegs")
 @Validated
+@Tag(name = "TradeLeg", description = "Component or part of a larger trade, which represnts one side or segment of a muilt part transcation")
 public class TradeLegController {
     private static final Logger logger = LoggerFactory.getLogger(TradeLegController.class);
 

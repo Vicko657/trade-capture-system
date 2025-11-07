@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.CurrencyDTO;
 import com.technicalchallenge.mapper.CurrencyMapper;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.service.CurrencyService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/currencies")
+@Tag(name = "Currency", description = "Ensures amounts and calculations use the correct currency, conversions and formatting")
 public class CurrencyController {
     private static final Logger logger = LoggerFactory.getLogger(CurrencyController.class);
 

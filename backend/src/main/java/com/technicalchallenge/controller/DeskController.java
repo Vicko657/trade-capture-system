@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.DeskDTO;
 import com.technicalchallenge.mapper.DeskMapper;
 import com.technicalchallenge.model.Desk;
 import com.technicalchallenge.service.DeskService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -12,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/desks")
 @Validated
+@Tag(name = "Desks", description = "Teams organized by product or market that manage trades")
 public class DeskController {
     private static final Logger logger = LoggerFactory.getLogger(DeskController.class);
 

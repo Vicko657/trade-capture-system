@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.HolidayCalendarDTO;
 import com.technicalchallenge.mapper.HolidayCalendarMapper;
 import com.technicalchallenge.model.HolidayCalendar;
 import com.technicalchallenge.service.HolidayCalendarService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/holidayCalendars")
+@Tag(name = "Holiday Calender", description = "List of non working days to validate business days for trading and settlement")
 public class HolidayCalendarController {
     private static final Logger logger = LoggerFactory.getLogger(HolidayCalendarController.class);
 
@@ -49,7 +53,8 @@ public class HolidayCalendarController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<HolidayCalendarDTO> update(@PathVariable Long id, @RequestBody HolidayCalendarDTO holidayCalendarDTO) {
+    public ResponseEntity<HolidayCalendarDTO> update(@PathVariable Long id,
+            @RequestBody HolidayCalendarDTO holidayCalendarDTO) {
         return holidayCalendarService.findById(id)
                 .map(existing -> {
                     HolidayCalendar entity = holidayCalendarMapper.toEntity(holidayCalendarDTO);

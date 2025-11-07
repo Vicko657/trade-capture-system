@@ -3,6 +3,9 @@ package com.technicalchallenge.controller;
 import com.technicalchallenge.dto.UserProfileDTO;
 import com.technicalchallenge.mapper.UserProfileMapper;
 import com.technicalchallenge.service.UserProfileService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/userProfiles")
+@Tag(name = "UserProfile", description = "A list of roles assigned to the user")
 public class UserProfileController {
     @Autowired
     private UserProfileService userProfileService;
@@ -38,7 +42,8 @@ public class UserProfileController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserProfileDTO> updateUserProfile(@PathVariable Long id, @RequestBody UserProfileDTO userProfileDTO) {
+    public ResponseEntity<UserProfileDTO> updateUserProfile(@PathVariable Long id,
+            @RequestBody UserProfileDTO userProfileDTO) {
         return userProfileService.updateUserProfile(id, userProfileMapper.toEntity(userProfileDTO))
                 .map(userProfile -> ResponseEntity.ok(userProfileMapper.toDto(userProfile)))
                 .orElse(ResponseEntity.notFound().build());

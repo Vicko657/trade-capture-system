@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.CostCenterDTO;
 import com.technicalchallenge.mapper.CostCenterMapper;
 import com.technicalchallenge.model.CostCenter;
 import com.technicalchallenge.service.CostCenterService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -12,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/costCenters")
 @Validated
+@Tag(name = "CostCenter", description = "Organization unit that manages and tracks costs seperately")
 public class CostCenterController {
     private static final Logger logger = LoggerFactory.getLogger(CostCenterController.class);
 

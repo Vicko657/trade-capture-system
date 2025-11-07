@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.SubDeskDTO;
 import com.technicalchallenge.mapper.SubDeskMapper;
 import com.technicalchallenge.model.SubDesk;
 import com.technicalchallenge.service.SubDeskService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -12,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/subdesks")
 @Validated
+@Tag(name = "SubDesk", description = "Smaller specialized unit within a larger trading desk")
 public class SubDeskController {
     private static final Logger logger = LoggerFactory.getLogger(SubDeskController.class);
 
@@ -65,7 +68,6 @@ public class SubDeskController {
         subDeskService.deleteSubDesk(id);
         return ResponseEntity.noContent().build();
     }
-
 
     @GetMapping("/values")
     public List<String> getAllSubDeskNames() {

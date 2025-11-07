@@ -4,6 +4,9 @@ import com.technicalchallenge.dto.PayRecDTO;
 import com.technicalchallenge.mapper.PayRecMapper;
 import com.technicalchallenge.model.PayRec;
 import com.technicalchallenge.service.PayRecService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/payRecs")
+@Tag(name = "PayRec", description = "Indicator on a trade leg that shows whether the party is pay or recieving cashflows")
 public class PayRecController {
     private static final Logger logger = LoggerFactory.getLogger(PayRecController.class);
 
