@@ -31,17 +31,18 @@ import com.technicalchallenge.repository.TradeRepository;
  * monitor their
  * positions and make informed trading decisions.
  * </p>
+ * 
+ * Future: Would remove {@link DashboardDataNotFoundException}, it was handled
+ * in the controller.
  */
 @Service
 @Transactional(readOnly = true)
 public class DashboardViewService {
 
         private final TradeRepository tradeRepository;
-        private final BookService bookService;
 
-        public DashboardViewService(TradeRepository tradeRepository, BookService bookService) {
+        public DashboardViewService(TradeRepository tradeRepository) {
                 this.tradeRepository = tradeRepository;
-                this.bookService = bookService;
         }
 
         /**
@@ -51,9 +52,8 @@ public class DashboardViewService {
          * Projected view of the trader's personal trades
          * </p>
          * 
-         * @param username   users authorized username
-         * @param pagination users can select the page
-         * @param sortBy     users can sort through the columns
+         * @param username users authorized username
+         * @param pageable users can select the page
          */
         public TradeSummaryDTO getTraderDashboard(String username, Pageable pageable) {
 
@@ -94,7 +94,6 @@ public class DashboardViewService {
          *
          * @param username users authorized username
          */
-
         public TradeSummaryDTO getTradePortfolioSummaries(String username) {
 
                 List<Trade> totalTrades = tradeRepository.findAllTrades(username);

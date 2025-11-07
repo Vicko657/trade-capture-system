@@ -154,10 +154,10 @@ public class DashboardServiceTest {
                 "NEW", "TestBookA", "TestCounterpartyA",
                 1);
 
-        tradeTypeBreakdown = new TradeTypeBreakdown("Option", BigDecimal.valueOf(2000000), 20.0);
+        tradeTypeBreakdown = new TradeTypeBreakdown("Option", BigDecimal.valueOf(2000000), BigDecimal.valueOf(20.0));
 
         counterpartyBreakdown = new CounterpartyBreakdown("TestcounterpartyA", BigDecimal.valueOf(4000000),
-                40.0);
+                BigDecimal.valueOf(40.0));
 
         riskExposure1 = new RiskExposure(1001L, 0.05, "FX", "EUR", "Pay", BigDecimal.valueOf(1000000));
 
@@ -338,7 +338,7 @@ public class DashboardServiceTest {
         // When - getDailyTradingStatistics method call including metric and comparison
         // results
         DailySummaryDTO result = dashboardViewService.getDailyTradingStatistics(username);
-        DailySummaryDTO.Metrics metricsResult = result.getSummerisedMetrics().get("todaysMetrics");
+        DailySummaryDTO.Metrics metricsResult = result.getSummarisedMetrics().get("todaysMetrics");
         DailySummaryDTO.Comparison comparisonResult = result.getComparison().get("notionalComparison");
 
         // Then - Verified results match expected daily trading statistics view

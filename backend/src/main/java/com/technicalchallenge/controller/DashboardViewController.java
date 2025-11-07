@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.technicalchallenge.dto.DailySummaryDTO;
@@ -47,12 +48,21 @@ public class DashboardViewController {
         })
         @GetMapping("/my-trades")
         @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
+        @ResponseBody
         public ResponseEntity<TradeSummaryDTO> getTraderDashboard(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails,
                         Pageable pageable) {
                 String username = userDetails.getUsername();
                 logger.info("Fetching the user's personal trades: {}", username);
-                return ResponseEntity.ok(dashboardViewService.getTraderDashboard(username, pageable));
+
+                TradeSummaryDTO personalDashboard = dashboardViewService.getTraderDashboard(username, pageable);
+
+                if (personalDashboard == null || personalDashboard.getTrades() == null
+                                || personalDashboard.getTrades().isEmpty()) {
+                        return ResponseEntity.noContent().build();
+                }
+
+                return ResponseEntity.ok(personalDashboard);
 
         }
 
@@ -65,11 +75,23 @@ public class DashboardViewController {
         })
         @GetMapping("/summary")
         @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
+        @ResponseBody
         public ResponseEntity<TradeSummaryDTO> getPortfolioSummaries(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails) {
                 String username = userDetails.getUsername();
                 logger.info("Fetching the user's trade summary: {}", username);
-                return ResponseEntity.ok(dashboardViewService.getTradePortfolioSummaries(username));
+
+                TradeSummaryDTO portfolioDashboard = dashboardViewService.getTradePortfolioSummaries(username);
+
+                if (portfolioDashboard == null || portfolioDashboard.getNotionalByTradeType() == null
+                                || portfolioDashboard.getNotionalByCounterparty() == null
+                                || portfolioDashboard.getRiskExposure() == null
+                                || portfolioDashboard.getTotalCountByStatus() == null
+                                || portfolioDashboard.getTotalNotionalByCurrency() == null) {
+                        return ResponseEntity.noContent().build();
+                }
+
+                return ResponseEntity.ok(portfolioDashboard);
 
         }
 
@@ -82,13 +104,22 @@ public class DashboardViewController {
         })
         @GetMapping("/book/{id}/trades")
         @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
+        @ResponseBody
         public ResponseEntity<DailySummaryDTO> getBookActivites(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails,
                         @PathVariable("id") Long id) {
 
                 String username = userDetails.getUsername();
                 logger.info("Fetching the user's book level activity: {}", username);
-                return ResponseEntity.ok(dashboardViewService.getBookLevelActivity(username, id));
+
+                DailySummaryDTO bookActivitiesDashboard = dashboardViewService.getBookLevelActivity(username, id);
+
+                if (bookActivitiesDashboard == null || bookActivitiesDashboard.getBookActivites() == null
+                                || bookActivitiesDashboard.getBookActivites().isEmpty()) {
+                        return ResponseEntity.noContent().build();
+                }
+
+                return ResponseEntity.ok(bookActivitiesDashboard);
 
         }
 
@@ -101,12 +132,21 @@ public class DashboardViewController {
         })
         @GetMapping("/daily-summary")
         @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
+        @ResponseBody
         public ResponseEntity<DailySummaryDTO> getDailyTradingStatistics(
                         @AuthenticationPrincipal ApplicationUserDetails userDetails) {
 
                 String username = userDetails.getUsername();
                 logger.info("Fetching the user's daily trading statistics: {}", username);
-                return ResponseEntity.ok(dashboardViewService.getDailyTradingStatistics(username));
+
+                DailySummaryDTO dailyTradingSummary = dashboardViewService.getDailyTradingStatistics(username);
+
+                if (dailyTradingSummary == null || dailyTradingSummary.getComparison() == null
+                                || dailyTradingSummary.getSummarisedMetrics() == null) {
+                        return ResponseEntity.noContent().build();
+                }
+
+                return ResponseEntity.ok(dailyTradingSummary);
 
         }
 
