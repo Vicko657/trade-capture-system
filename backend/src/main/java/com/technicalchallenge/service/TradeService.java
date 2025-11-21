@@ -1,26 +1,15 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.dto.PaginationDTO;
-import com.technicalchallenge.dto.SearchTradeByCriteria;
-import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
-import com.technicalchallenge.specification.TradeSpecification;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
 
-import io.github.perplexhub.rsql.RSQLJPASupport;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -708,134 +697,6 @@ public class TradeService {
         }
 
         return BigDecimal.ZERO;
-    }
-
-    /**
-     * Trade: Filtered Search
-     * 
-     * <p>
-     * Multi Criteria By counterparty, book, trader, status, date
-     * ranges, paginated filtering and sorting for all trades
-     * 
-     * - Sorts the trades by column name and in order of ASC or DESC,
-     * handles if the sort direction is not filled
-     * 
-     * - Includes a sorted, unsorted page request for the user to
-     * be able to seperately sort or change the pagination
-     * 
-     * </p>
-     * 
-     * @param SearchTradeByCriteria JPA Specification Search
-     * @param PaginationDTO         Custom pagination
-     * @param SortDTO               Custom sort
-     * @return returns filtered search results
-     */
-    public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
-            SortDTO sortFields) {
-
-        tradeValidator.validateSearch(searchTradeByCriteria);
-
-        logger.debug("Search validation passed to find trade");
-
-        // Sort By
-        String sortColumn;
-        String sortDirection = sortFields.sortDir(); // Default is ASC
-
-        if (sortFields.sortBy() == null || sortFields.sortBy().isBlank()) {
-            sortColumn = "tradeId"; // Default is tradeID
-        } else {
-            sortColumn = sortFields.sortBy();
-        }
-
-        Sort sort = null;
-        if (sortDirection == null) {
-            sort = Sort.unsorted();
-        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
-            sort = Sort.by(sortColumn).ascending();
-        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.DESC.name())) {
-            sort = Sort.by(sortColumn).descending();
-        }
-
-        // Pagination
-
-        Integer pageNo = pagination.pageNo();
-        Integer pageSize = pagination.pageSize();
-        Pageable pageable;
-
-        if (pagination.pageNo() != null && pageSize != null && pageNo > 0 && sort != null) {
-
-            // Page Request with sort parameters applied (Page details and sort details are
-            // not null)
-
-            pageable = PageRequest.of(pageNo - 1, pageSize, sort);
-        } else if (sort == null) {
-
-            // Unsorted page request (With the page details, if the sort is null)
-
-            pageable = PageRequest.of(pageNo - 1, pageSize);
-        } else {
-
-            // No pagination setup and seperates the filtered criteria search
-
-            pageable = Pageable.unpaged();
-        }
-
-        // Filtered multi criteria search
-
-        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-
-        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
-
-        return tradeRepository.findAll(specification, pageable);
-    }
-
-    /**
-     * Trade: RSQL Search
-     * 
-     * <p>
-     * The RSQL plugin automatically builds the JPA specification with
-     * less code and provides filtering support for power users.
-     * 
-     * Used the plugin recommended which saved time:
-     * {@link https://github.com/perplexhub/rsql-jpa-specification}
-     * </p>
-     * 
-     * @param query trade unique identifier
-     * @return powerful results
-     */
-    public List<Trade> getAllTradesByRSQL(String query) {
-
-        tradeValidator.validateRSQLSearch(query);
-        logger.debug("Query validation passed to find trade");
-
-        Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
-        logger.info("Retrieving all trades by rsql: {}", query);
-        return tradeRepository.findAll(specfication);
-    }
-
-    /**
-     * Trade: Multi Criteria Search
-     * 
-     * <p>
-     * By counterparty, book, trader, status, date ranges
-     * </p>
-     * 
-     * 
-     * FUTURE: Refactor to a much simplier search using aggregated
-     * queries, wasn't initially sure of how complex the search should've been.
-     * 
-     * @param SearchTradeByCriteria trade unique identifier
-     * @return search results
-     */
-    public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
-
-        tradeValidator.validateSearch(searchTradeByCriteria);
-        logger.debug("Search validation passed to find trade");
-
-        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
-
-        return tradeRepository.findAll(specification);
     }
 
     // NEW METHOD: Generate the next trade ID (sequential)

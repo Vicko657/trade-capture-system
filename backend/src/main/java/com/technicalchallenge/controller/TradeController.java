@@ -1,8 +1,5 @@
 package com.technicalchallenge.controller;
 
-import com.technicalchallenge.dto.PaginationDTO;
-import com.technicalchallenge.dto.SearchTradeByCriteria;
-import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.mapper.TradeMapper;
@@ -10,7 +7,6 @@ import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -216,77 +212,6 @@ public class TradeController {
             logger.error("Error cancelling trade: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body("Error cancelling trade: " + e.getMessage());
         }
-    }
-
-    @Operation(summary = "Get a result of paginated filtered trades by filter", description = "Returns a page of trades, that can be filtered, paginated or sorted")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated filtered trades", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
-            @ApiResponse(responseCode = "204", description = "No Trades found"),
-            @ApiResponse(responseCode = "401", description = "User's access denied"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/filter")
-    @PreAuthorize("hasAuthority('READ_TRADE')")
-    public ResponseEntity<Page<TradeDTO>> getAllTrades(@Valid @RequestParam SearchTradeByCriteria searchTradeByCriteria,
-            PaginationDTO pagination, SortDTO sort) {
-
-        Page<TradeDTO> trades = tradeService.getAllTrades(searchTradeByCriteria, pagination, sort)
-                .map(tradeMapper::toDto);
-
-        if (trades.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(trades);
-        }
-
-    }
-
-    @Operation(summary = "Get all trades by rsql", description = "Retrieves a list of trades filtered by RSQL JPA Spring Boot starter query plugin, io.github.perplexhub:rsql-jpa-spring-boot-starter, to process dynamic RSQL query strings")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades by RSQL", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
-            @ApiResponse(responseCode = "204", description = "No Trades found"),
-            @ApiResponse(responseCode = "401", description = "User's access denied"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/rsql")
-    @PreAuthorize("hasAuthority('READ_TRADE')")
-    public ResponseEntity<List<TradeDTO>> getTradesByRSQL(
-            @Valid @RequestParam(value = "query", required = false) String query) {
-
-        List<TradeDTO> trades = tradeService.getAllTradesByRSQL(query).stream()
-                .map(tradeMapper::toDto)
-                .toList();
-
-        if (trades.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(trades);
-        }
-
-    }
-
-    @Operation(summary = "Get all trades by search criteria", description = "Retrieves Trades by counterparty, book, trader, status, date ranges and returns comprehensive trade information including legs and cashflows.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades under the searched criteria", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
-            @ApiResponse(responseCode = "204", description = "No Trades found"),
-            @ApiResponse(responseCode = "401", description = "User's access denied"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/search")
-    @PreAuthorize("hasAuthority('READ_TRADE')")
-    public ResponseEntity<List<TradeDTO>> getAllTradesByCriteria(
-            @Valid SearchTradeByCriteria searchTradeByCriteria) {
-
-        List<TradeDTO> trades = tradeService.getAllTradesByCriteria(searchTradeByCriteria).stream()
-                .map(tradeMapper::toDto)
-                .toList();
-
-        if (trades.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(trades);
-        }
-
     }
 
 }
