@@ -20,7 +20,7 @@ import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.specification.TradeSpecification;
-import com.technicalchallenge.validation.TradeValidator;
+import com.technicalchallenge.validation.TradeSearchValidator;
 
 import io.github.perplexhub.rsql.RSQLJPASupport;
 import jakarta.transaction.Transactional;
@@ -34,7 +34,7 @@ public class TradeSearchService {
     private static final Logger logger = LoggerFactory.getLogger(TradeSearchService.class);
 
     @Autowired
-    private TradeValidator tradeValidator;
+    private TradeSearchValidator tradeSearchValidator;
 
     @Autowired
     private TradeMapper tradeMapper;
@@ -58,7 +58,7 @@ public class TradeSearchService {
      */
     public List<TradeDTO> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
 
-        tradeValidator.validateSearch(searchTradeByCriteria);
+        tradeSearchValidator.validateSearch(searchTradeByCriteria);
         logger.debug("Search validation passed to find trade");
 
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
@@ -92,7 +92,7 @@ public class TradeSearchService {
     public Page<TradeDTO> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
             SortDTO sortFields) {
 
-        tradeValidator.validateSearch(searchTradeByCriteria);
+        tradeSearchValidator.validateSearch(searchTradeByCriteria);
 
         logger.debug("Search validation passed to find trade");
 
@@ -164,7 +164,7 @@ public class TradeSearchService {
      */
     public List<TradeDTO> getAllTradesByRSQL(String query) {
 
-        tradeValidator.validateRSQLSearch(query);
+        tradeSearchValidator.validateRSQLSearch(query);
         logger.debug("Query validation passed to find trade");
 
         Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
