@@ -47,14 +47,6 @@ public class TradeValidator {
     private static final Logger logger = LoggerFactory.getLogger(TradeValidator.class);
 
     @Autowired
-    private BookService bookService;
-    @Autowired
-    private CounterpartyService counterpartyService;
-    @Autowired
-    private TradeStatusService tradeStatusService;
-    @Autowired
-    private TradeTypeService tradeTypeService;
-    @Autowired
     private CurrencyService currencyService;
     @Autowired
     private PayRecService payRecService;
@@ -77,9 +69,6 @@ public class TradeValidator {
     public ValidationResult validateTradeBusinessRules(TradeDTO tradeDTO) {
 
         List<String> errors = new ArrayList<>();
-
-        // Entity Status Validation - All Reference Data must exist and be valid
-        validateAllReferenceData(tradeDTO);
 
         // Date Validation Rules
 
@@ -113,70 +102,6 @@ public class TradeValidator {
         }
 
         return ValidationResult.isNotValid(errors);
-
-    }
-
-    /**
-     * 
-     * 2. Entity Status Validation
-     * 
-     * The void method is called in the Validation for Trade Business Rules,
-     * before the business rules are checked
-     * 
-     * User validation is validated in the {@link AuthorizationService}
-     * 
-     */
-    private void validateAllReferenceData(TradeDTO tradeDTO) {
-
-        // User, book and counterparty must be active, exist and be valid
-        validateBookReference(tradeDTO);
-        validateCounterpartyReference(tradeDTO);
-
-        // All reference data must exist and be valid
-        validateTradeStatusReference(tradeDTO);
-        validateTradeTypeReference(tradeDTO);
-
-        logger.debug("Reference data validation passed for trade");
-
-    }
-
-    // Book Validation
-    private void validateBookReference(TradeDTO tradeDTO) {
-
-        Long bookId = tradeDTO.getBookId();
-        String bookName = tradeDTO.getBookName();
-
-        bookService.validateBook(bookId, bookName);
-
-    }
-
-    // Counterparty Validation
-    private void validateCounterpartyReference(TradeDTO tradeDTO) {
-
-        Long counterpartyId = tradeDTO.getCounterpartyId();
-        String counterpartyName = tradeDTO.getCounterpartyName();
-
-        counterpartyService.validateCounterparty(counterpartyId, counterpartyName);
-    }
-
-    // TradeStatus Validation
-    private void validateTradeStatusReference(TradeDTO tradeDTO) {
-
-        Long tradeStatusId = tradeDTO.getTradeStatusId();
-        tradeStatusService.validateTradeStatus(tradeStatusId);
-
-    }
-
-    // TradeType Validation
-    private void validateTradeTypeReference(TradeDTO tradeDTO) {
-
-        Long tradeTypeId = tradeDTO.getTradeTypeId();
-        String tradeType = tradeDTO.getTradeSubType();
-        Long tradeSubTypeId = tradeDTO.getTradeSubTypeId();
-        String tradeSubType = tradeDTO.getTradeSubType();
-
-        tradeTypeService.validateTradeType(tradeTypeId, tradeType);
-        tradeTypeService.validateTradeSubType(tradeSubTypeId, tradeSubType);
 
     }
 

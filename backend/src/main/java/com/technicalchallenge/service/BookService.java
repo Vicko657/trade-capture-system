@@ -1,8 +1,7 @@
 package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.BookDTO;
-import com.technicalchallenge.exceptions.EntityNotFoundException;
-import com.technicalchallenge.exceptions.InActiveException;
+import com.technicalchallenge.exceptions.referencedata.BookNotFoundException;
 import com.technicalchallenge.mapper.BookMapper;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.repository.BookRepository;
@@ -14,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -32,30 +30,17 @@ public class BookService {
                 .toList();
     }
 
-    public Optional<BookDTO> getBookById(Long id) {
+    public BookDTO getBookById(Long id) {
         logger.debug("Retrieving book by id: {}", id);
-        return bookRepository.findById(id).map(bookMapper::toDto);
+        Book book = findBookId(id);
+        BookDTO bookDTO = bookMapper.toDto(book);
+        return bookDTO;
     }
 
-    public Optional<BookDTO> getBookByBookName(String bookName) {
+    public BookDTO getBookByBookName(String bookName) {
         logger.debug("Retrieving book by id: {}", bookName);
-        return bookRepository.findByBookName(bookName).map(bookMapper::toDto);
-    }
-
-    public void validateBook(Long id, String bookName) {
-        BookDTO book = null;
-        if (id != null && bookName != null) {
-            if (getBookById(id).isEmpty()) {
-                throw new EntityNotFoundException("Book not found by id");
-            } else if (getBookByBookName(bookName).isEmpty()) {
-                throw new EntityNotFoundException("Book not found by bookname");
-            }
-            book = getBookById(id).get();
-        }
-        if (!book.isActive()) {
-            throw new InActiveException("Book must be active");
-        }
-
+        Book book = findBookName(bookName);
+        return bookMapper.toDto(book);
     }
 
     public void populateReferenceDataByName(Book book, BookDTO dto) {
@@ -83,5 +68,16 @@ public class BookService {
     public void deleteBook(Long id) {
         logger.warn("Deleting book with id: {}", id);
         bookRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for Trade Service
+    public Book findBookId(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new BookNotFoundException("bookId", id));
+    }
+
+    public Book findBookName(String bookName) {
+        return bookRepository.findByBookName(bookName)
+                .orElseThrow(() -> new BookNotFoundException("bookName", bookName));
     }
 }
