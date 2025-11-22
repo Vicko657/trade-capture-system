@@ -1,7 +1,6 @@
 package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.TradeDTO;
-import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.exceptions.InActiveException;
 import com.technicalchallenge.mapper.TradeMapper;
@@ -17,10 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,27 +47,11 @@ public class TradeService {
     @Autowired
     private TradeRepository tradeRepository;
     @Autowired
-    private TradeLegRepository tradeLegRepository;
+    private TradeLegService tradeLegService;
     @Autowired
-    private CashflowRepository cashflowRepository;
+    private CashflowService cashflowService;
     @Autowired
     private TradeStatusRepository tradeStatusRepository;
-    @Autowired
-    private CurrencyRepository currencyRepository;
-    @Autowired
-    private LegTypeRepository legTypeRepository;
-    @Autowired
-    private IndexRepository indexRepository;
-    @Autowired
-    private HolidayCalendarRepository holidayCalendarRepository;
-    @Autowired
-    private ScheduleRepository scheduleRepository;
-    @Autowired
-    private BusinessDayConventionRepository businessDayConventionRepository;
-    @Autowired
-    private PayRecRepository payRecRepository;
-    @Autowired
-    private AdditionalInfoService additionalInfoService;
     @Autowired
     private TradeValidator tradeValidator;
     @Autowired
@@ -167,10 +147,6 @@ public class TradeService {
         ValidationResult tradeBusinessValidation = tradeValidator.validateTradeBusinessRules(tradeDTO);
         tradeBusinessValidation.throwifNotValid();
 
-        // Validate cross legs rules
-        ValidationResult tradeCrossLegValidation = tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs());
-        tradeCrossLegValidation.throwifNotValid();
-
         // Generate trade ID if not provided
         if (tradeDTO.getTradeId() == null) {
             // Generate sequential trade ID starting from 10000
@@ -194,10 +170,10 @@ public class TradeService {
         // Populate reference data
         populateReferenceDataByName(trade, tradeDTO);
 
-        Trade savedTrade = tradeRepository.save(trade);
-
         // Create trade legs and cashflows
-        createTradeLegsWithCashflows(tradeDTO, savedTrade);
+        createTradeLegsWithCashflows(tradeDTO, trade);
+
+        Trade savedTrade = tradeRepository.save(trade);
 
         logger.info("Successfully created trade with ID: {}", savedTrade.getTradeId());
         return savedTrade;
@@ -426,209 +402,24 @@ public class TradeService {
         return trade;
     }
 
-    private void createTradeLegsWithCashflows(TradeDTO tradeDTO, Trade savedTrade) {
-        for (int i = 0; i < tradeDTO.getTradeLegs().size(); i++) {
-            var legDTO = tradeDTO.getTradeLegs().get(i);
+    // NEW METHOD: Creates Trade Legs with Cashflows (Cleaner Seperation of Concerns
+    // and easier to debug)
+    public void createTradeLegsWithCashflows(TradeDTO tradeDTO, Trade trade) {
 
-            TradeLeg tradeLeg = new TradeLeg();
-            tradeLeg.setTrade(savedTrade);
-            tradeLeg.setNotional(legDTO.getNotional());
-            tradeLeg.setRate(legDTO.getRate());
-            tradeLeg.setActive(true);
-            tradeLeg.setCreatedDate(LocalDateTime.now());
+        List<TradeLeg> tradeLegs = tradeLegService.createTradeLegs(tradeDTO, trade);
+        trade.setTradeLegs(tradeLegs);
 
-            // Populate reference data for leg
-            populateLegReferenceData(tradeLeg, legDTO);
+        if (tradeDTO.getTradeStartDate() != null && tradeDTO.getTradeMaturityDate() != null) {
 
-            TradeLeg savedLeg = tradeLegRepository.save(tradeLeg);
+            for (TradeLeg leg : tradeLegs) {
+                List<Cashflow> cashflows = cashflowService.generateCashflows(leg, tradeDTO.getTradeStartDate(),
+                        tradeDTO.getTradeMaturityDate());
 
-            // Generate cashflows for this leg
-            if (tradeDTO.getTradeStartDate() != null && tradeDTO.getTradeMaturityDate() != null) {
-                generateCashflows(savedLeg, tradeDTO.getTradeStartDate(), tradeDTO.getTradeMaturityDate());
+                leg.setCashflows(cashflows);
             }
-        }
-    }
-
-    private void populateLegReferenceData(TradeLeg leg, TradeLegDTO legDTO) {
-        // Populate currency by name or ID
-        if (legDTO.getCurrency() != null) {
-            currencyRepository.findByCurrency(legDTO.getCurrency())
-                    .ifPresent(leg::setCurrency);
-        } else if (legDTO.getCurrencyId() != null) {
-            currencyRepository.findById(legDTO.getCurrencyId())
-                    .ifPresent(leg::setCurrency);
-        }
-
-        // Populate leg type by name or ID
-        if (legDTO.getLegType() != null) {
-            legTypeRepository.findByType(legDTO.getLegType())
-                    .ifPresent(leg::setLegRateType);
-        } else if (legDTO.getLegTypeId() != null) {
-            legTypeRepository.findById(legDTO.getLegTypeId())
-                    .ifPresent(leg::setLegRateType);
-        }
-
-        // Populate index by name or ID
-        if (legDTO.getIndexName() != null) {
-            indexRepository.findByIndex(legDTO.getIndexName())
-                    .ifPresent(leg::setIndex);
-        } else if (legDTO.getIndexId() != null) {
-            indexRepository.findById(legDTO.getIndexId())
-                    .ifPresent(leg::setIndex);
-        }
-
-        // Populate holiday calendar by name or ID
-        if (legDTO.getHolidayCalendar() != null) {
-            holidayCalendarRepository.findByHolidayCalendar(legDTO.getHolidayCalendar())
-                    .ifPresent(leg::setHolidayCalendar);
-        } else if (legDTO.getHolidayCalendarId() != null) {
-            holidayCalendarRepository.findById(legDTO.getHolidayCalendarId())
-                    .ifPresent(leg::setHolidayCalendar);
-        }
-
-        // Populate schedule by name or ID
-        if (legDTO.getCalculationPeriodSchedule() != null) {
-            scheduleRepository.findBySchedule(legDTO.getCalculationPeriodSchedule())
-                    .ifPresent(leg::setCalculationPeriodSchedule);
-        } else if (legDTO.getScheduleId() != null) {
-            scheduleRepository.findById(legDTO.getScheduleId())
-                    .ifPresent(leg::setCalculationPeriodSchedule);
-        }
-
-        // Populate payment business day convention by name or ID
-        if (legDTO.getPaymentBusinessDayConvention() != null) {
-            businessDayConventionRepository.findByBdc(legDTO.getPaymentBusinessDayConvention())
-                    .ifPresent(leg::setPaymentBusinessDayConvention);
-        } else if (legDTO.getPaymentBdcId() != null) {
-            businessDayConventionRepository.findById(legDTO.getPaymentBdcId())
-                    .ifPresent(leg::setPaymentBusinessDayConvention);
-        }
-
-        // Populate fixing business day convention by name or ID
-        if (legDTO.getFixingBusinessDayConvention() != null) {
-            businessDayConventionRepository.findByBdc(legDTO.getFixingBusinessDayConvention())
-                    .ifPresent(leg::setFixingBusinessDayConvention);
-        } else if (legDTO.getFixingBdcId() != null) {
-            businessDayConventionRepository.findById(legDTO.getFixingBdcId())
-                    .ifPresent(leg::setFixingBusinessDayConvention);
-        }
-
-        // Populate pay/receive flag by name or ID
-        if (legDTO.getPayReceiveFlag() != null) {
-            payRecRepository.findByPayRec(legDTO.getPayReceiveFlag())
-                    .ifPresent(leg::setPayReceiveFlag);
-        } else if (legDTO.getPayRecId() != null) {
-            payRecRepository.findById(legDTO.getPayRecId())
-                    .ifPresent(leg::setPayReceiveFlag);
-        }
-    }
-
-    /**
-     * FIXED: Generate cashflows based on schedule and maturity date
-     */
-    private void generateCashflows(TradeLeg leg, LocalDate startDate, LocalDate maturityDate) {
-        logger.info("Generating cashflows for leg {} from {} to {}", leg.getLegId(), startDate, maturityDate);
-
-        // Use default schedule if not set
-        String schedule = "3M"; // Default to quarterly
-        if (leg.getCalculationPeriodSchedule() != null) {
-            schedule = leg.getCalculationPeriodSchedule().getSchedule();
-        }
-
-        int monthsInterval = parseSchedule(schedule);
-        List<LocalDate> paymentDates = calculatePaymentDates(startDate, maturityDate, monthsInterval);
-
-        for (LocalDate paymentDate : paymentDates) {
-            Cashflow cashflow = new Cashflow();
-            cashflow.setTradeLeg(leg); // Fixed field name
-            cashflow.setValueDate(paymentDate);
-            cashflow.setRate(leg.getRate());
-
-            // Calculate value based on leg type
-            BigDecimal cashflowValue = calculateCashflowValue(leg, monthsInterval);
-            cashflow.setPaymentValue(cashflowValue);
-
-            cashflow.setPayRec(leg.getPayReceiveFlag());
-            cashflow.setPaymentBusinessDayConvention(leg.getPaymentBusinessDayConvention());
-            cashflow.setCreatedDate(LocalDateTime.now());
-            cashflow.setActive(true);
-
-            cashflowRepository.save(cashflow);
-
-            // Fixed: Makes sure the Tradeleg contains the cashflows once they are saved.
-            leg.getCashflows().add(cashflow);
 
         }
 
-        logger.info("Generated {} cashflows for leg {}", paymentDates.size(), leg.getLegId());
-    }
-
-    private int parseSchedule(String schedule) {
-        if (schedule == null || schedule.trim().isEmpty()) {
-            return 3; // Default to quarterly
-        }
-
-        schedule = schedule.trim();
-
-        // Handle common schedule names
-        switch (schedule.toLowerCase()) {
-            case "monthly":
-                return 1;
-            case "quarterly":
-                return 3;
-            case "semi-annually":
-            case "semiannually":
-            case "half-yearly":
-                return 6;
-            case "annually":
-            case "yearly":
-                return 12;
-            default:
-                // Parse "1M", "3M", "12M" format
-                if (schedule.endsWith("M") || schedule.endsWith("m")) {
-                    try {
-                        return Integer.parseInt(schedule.substring(0, schedule.length() - 1));
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("Invalid schedule format: " + schedule);
-                    }
-                }
-                throw new RuntimeException("Invalid schedule format: " + schedule
-                        + ". Supported formats: Monthly, Quarterly, Semi-annually, Annually, or 1M, 3M, 6M, 12M");
-        }
-    }
-
-    private List<LocalDate> calculatePaymentDates(LocalDate startDate, LocalDate maturityDate, int monthsInterval) {
-        List<LocalDate> dates = new ArrayList<>();
-        LocalDate currentDate = startDate.plusMonths(monthsInterval);
-
-        while (!currentDate.isAfter(maturityDate)) {
-            dates.add(currentDate);
-            currentDate = currentDate.plusMonths(monthsInterval);
-        }
-
-        return dates;
-    }
-
-    private BigDecimal calculateCashflowValue(TradeLeg leg, int monthsInterval) {
-        if (leg.getLegRateType() == null) {
-            return BigDecimal.ZERO;
-        }
-
-        String legType = leg.getLegRateType().getType();
-
-        if ("Fixed".equals(legType)) {
-            double notional = leg.getNotional().doubleValue();
-            double rate = leg.getRate();
-            double months = monthsInterval;
-
-            double result = (notional * rate * months) / 12;
-
-            return BigDecimal.valueOf(result);
-        } else if ("Floating".equals(legType)) {
-            return BigDecimal.ZERO;
-        }
-
-        return BigDecimal.ZERO;
     }
 
     // NEW METHOD: Generate the next trade ID (sequential)
