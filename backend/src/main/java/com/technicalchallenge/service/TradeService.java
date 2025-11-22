@@ -3,9 +3,11 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.InActiveException;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
+import com.technicalchallenge.validation.ReferenceDataValidator;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
 
@@ -20,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Trade service class provides business logic and operations relating
@@ -56,16 +57,6 @@ public class TradeService {
     @Autowired
     private TradeStatusRepository tradeStatusRepository;
     @Autowired
-    private BookRepository bookRepository;
-    @Autowired
-    private CounterpartyRepository counterpartyRepository;
-    @Autowired
-    private ApplicationUserRepository applicationUserRepository;
-    @Autowired
-    private TradeTypeRepository tradeTypeRepository;
-    @Autowired
-    private TradeSubTypeRepository tradeSubTypeRepository;
-    @Autowired
     private CurrencyRepository currencyRepository;
     @Autowired
     private LegTypeRepository legTypeRepository;
@@ -83,6 +74,8 @@ public class TradeService {
     private AdditionalInfoService additionalInfoService;
     @Autowired
     private TradeValidator tradeValidator;
+    @Autowired
+    private ReferenceDataValidator referenceDataValidator;
     @Autowired
     private AuthorizationService authorizationService;
 
@@ -223,36 +216,35 @@ public class TradeService {
         }
     }
 
-    // FIXED: Populate reference data by names from DTO
+    // FIXED: Populate reference data by names from DTO.
+    // UPDATED: Using the ReferenceDataValidator instead of repositories to reduce
+    // code repetition.
     public void populateReferenceDataByName(Trade trade, TradeDTO tradeDTO) {
         logger.debug("Populating reference data for trade");
 
         // Populate Book
-        if (tradeDTO.getBookName() != null) {
-            bookRepository.findByBookName(tradeDTO.getBookName())
-                    .ifPresent(trade::setBook);
-        } else if (tradeDTO.getBookId() != null) {
-            bookRepository.findById(tradeDTO.getBookId())
-                    .ifPresent(trade::setBook);
+        Book book = referenceDataValidator.validateBookReference(tradeDTO);
+
+        if (!book.isActive()) {
+            throw new InActiveException("Book must be active to populate a Trade");
         }
+        logger.debug("Book is active");
+
+        trade.setBook(book);
 
         // Populate Counterparty
-        if (tradeDTO.getCounterpartyName() != null) {
-            counterpartyRepository.findByName(tradeDTO.getCounterpartyName())
-                    .ifPresent(trade::setCounterparty);
-        } else if (tradeDTO.getCounterpartyId() != null) {
-            counterpartyRepository.findById(tradeDTO.getCounterpartyId())
-                    .ifPresent(trade::setCounterparty);
+        Counterparty counterparty = referenceDataValidator.validateCounterpartyReference(tradeDTO);
+
+        if (!counterparty.isActive()) {
+            throw new InActiveException("Counterparty must be active to populate a Trade");
         }
+        logger.debug("Counterparty is active");
+
+        trade.setCounterparty(counterparty);
 
         // Populate TradeStatus
-        if (tradeDTO.getTradeStatus() != null) {
-            tradeStatusRepository.findByTradeStatus(tradeDTO.getTradeStatus())
-                    .ifPresent(trade::setTradeStatus);
-        } else if (tradeDTO.getTradeStatusId() != null) {
-            tradeStatusRepository.findById(tradeDTO.getTradeStatusId())
-                    .ifPresent(trade::setTradeStatus);
-        }
+        TradeStatus tradeStatus = referenceDataValidator.validateTradeStatusReference(tradeDTO);
+        trade.setTradeStatus(tradeStatus);
 
         // Populate other reference data
         populateUserReferences(trade, tradeDTO);
@@ -260,100 +252,40 @@ public class TradeService {
     }
 
     private void populateUserReferences(Trade trade, TradeDTO tradeDTO) {
-        // Handle trader user by name or ID with enhanced logging
-        if (tradeDTO.getTraderUserName() != null) {
-            logger.debug("Looking up trader user by name: {}", tradeDTO.getTraderUserName());
-            String[] nameParts = tradeDTO.getTraderUserName().trim().split("\\s+");
-            if (nameParts.length >= 1) {
-                String firstName = nameParts[0];
-                logger.debug("Searching for user with firstName: {}", firstName);
-                Optional<ApplicationUser> userOpt = applicationUserRepository.findByFirstName(firstName);
-                if (userOpt.isPresent()) {
-                    trade.setTraderUser(userOpt.get());
-                    logger.debug("Found trader user: {} {}", userOpt.get().getFirstName(), userOpt.get().getLastName());
-                } else {
-                    logger.warn("Trader user not found with firstName: {}", firstName);
-                    // Try with loginId as fallback
-                    Optional<ApplicationUser> byLoginId = applicationUserRepository
-                            .findByLoginId(tradeDTO.getTraderUserName().toLowerCase());
-                    if (byLoginId.isPresent()) {
-                        trade.setTraderUser(byLoginId.get());
-                        logger.debug("Found trader user by loginId: {}", tradeDTO.getTraderUserName());
-                    } else {
-                        logger.warn("Trader user not found by loginId either: {}", tradeDTO.getTraderUserName());
-                    }
-                }
-            }
-        } else if (tradeDTO.getTraderUserId() != null) {
-            applicationUserRepository.findById(tradeDTO.getTraderUserId())
-                    .ifPresent(trade::setTraderUser);
+
+        // Populate TraderUserReference
+        ApplicationUser traderUser = referenceDataValidator.validateTraderUserReference(tradeDTO);
+
+        // Checks if traderUser is active
+        if (!traderUser.isActive()) {
+            throw new InActiveException("TraderUser must be active to populate a Trade");
         }
 
-        // Handle inputter user by name or ID with enhanced logging
-        if (tradeDTO.getInputterUserName() != null) {
-            logger.debug("Looking up inputter user by name: {}", tradeDTO.getInputterUserName());
-            String[] nameParts = tradeDTO.getInputterUserName().trim().split("\\s+");
-            if (nameParts.length >= 1) {
-                String firstName = nameParts[0];
-                logger.debug("Searching for inputter with firstName: {}", firstName);
-                Optional<ApplicationUser> userOpt = applicationUserRepository.findByFirstName(firstName);
-                if (userOpt.isPresent()) {
-                    trade.setTradeInputterUser(userOpt.get());
-                    logger.debug("Found inputter user: {} {}", userOpt.get().getFirstName(),
-                            userOpt.get().getLastName());
-                } else {
-                    logger.warn("Inputter user not found with firstName: {}", firstName);
-                    // Try with loginId as fallback
-                    Optional<ApplicationUser> byLoginId = applicationUserRepository
-                            .findByLoginId(tradeDTO.getInputterUserName().toLowerCase());
-                    if (byLoginId.isPresent()) {
-                        trade.setTradeInputterUser(byLoginId.get());
-                        logger.debug("Found inputter user by loginId: {}", tradeDTO.getInputterUserName());
-                    } else {
-                        logger.warn("Inputter user not found by loginId either: {}", tradeDTO.getInputterUserName());
-                    }
-                }
-            }
-        } else if (tradeDTO.getTradeInputterUserId() != null) {
-            applicationUserRepository.findById(tradeDTO.getTradeInputterUserId())
-                    .ifPresent(trade::setTradeInputterUser);
+        trade.setTraderUser(traderUser);
+
+        // Populate InputterUserReference
+        ApplicationUser inputterUser = referenceDataValidator.validateInputterUserReference(tradeDTO);
+
+        // Checks if traderUser is active
+        if (!inputterUser.isActive()) {
+            throw new InActiveException("TraderUser must be active to populate a Trade");
         }
+
+        trade.setTraderUser(traderUser);
+
     }
 
     private void populateTradeTypeReferences(Trade trade, TradeDTO tradeDTO) {
-        if (tradeDTO.getTradeType() != null) {
-            logger.debug("Looking up trade type: {}", tradeDTO.getTradeType());
-            Optional<TradeType> tradeTypeOpt = tradeTypeRepository.findByTradeType(tradeDTO.getTradeType());
-            if (tradeTypeOpt.isPresent()) {
-                trade.setTradeType(tradeTypeOpt.get());
-                logger.debug("Found trade type: {} with ID: {}", tradeTypeOpt.get().getTradeType(),
-                        tradeTypeOpt.get().getId());
-            } else {
-                logger.warn("Trade type not found: {}", tradeDTO.getTradeType());
-            }
-        } else if (tradeDTO.getTradeTypeId() != null) {
-            tradeTypeRepository.findById(tradeDTO.getTradeTypeId())
-                    .ifPresent(trade::setTradeType);
-        }
 
-        if (tradeDTO.getTradeSubType() != null) {
-            Optional<TradeSubType> tradeSubTypeOpt = tradeSubTypeRepository
-                    .findByTradeSubType(tradeDTO.getTradeSubType());
-            if (tradeSubTypeOpt.isPresent()) {
-                trade.setTradeSubType(tradeSubTypeOpt.get());
-            } else {
-                List<TradeSubType> allSubTypes = tradeSubTypeRepository.findAll();
-                for (TradeSubType subType : allSubTypes) {
-                    if (subType.getTradeSubType().equalsIgnoreCase(tradeDTO.getTradeSubType())) {
-                        trade.setTradeSubType(subType);
-                        break;
-                    }
-                }
-            }
-        } else if (tradeDTO.getTradeSubTypeId() != null) {
-            tradeSubTypeRepository.findById(tradeDTO.getTradeSubTypeId())
-                    .ifPresent(trade::setTradeSubType);
-        }
+        // Populate TradeType
+        TradeType tradeType = referenceDataValidator.validateTradeTypeReference(tradeDTO);
+
+        trade.setTradeType(tradeType);
+
+        // Populate TradeSubType
+        TradeSubType tradeSubType = referenceDataValidator.validateTradeSubTypeReference(tradeDTO);
+
+        trade.setTradeSubType(tradeSubType);
     }
 
     // NEW METHOD: Delete trade (mark as cancelled)
