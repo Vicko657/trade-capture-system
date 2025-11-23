@@ -323,13 +323,19 @@ public class ReferenceDataValidator {
         Long indexId = tradeLegDTO.getIndexId();
         String index = tradeLegDTO.getIndexName();
 
-        if (index != null) {
-            return indexService.findIndex(index);
-        } else if (indexId != null) {
-            return indexService.findId(indexId);
+        if (tradeLegDTO.getLegType().equalsIgnoreCase("floating")) {
+
+            if (index != null) {
+                return indexService.findIndex(index);
+            } else if (indexId != null) {
+                return indexService.findId(indexId);
+            } else {
+                throw new ValidationException("Index Id or name is required");
+            }
+
         }
 
-        throw new ValidationException("Index Id or name is required");
+        return null;
 
     }
 
