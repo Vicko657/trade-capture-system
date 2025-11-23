@@ -15,8 +15,6 @@ import org.springframework.stereotype.Service;
 import com.technicalchallenge.dto.PaginationDTO;
 import com.technicalchallenge.dto.SearchTradeByCriteria;
 import com.technicalchallenge.dto.SortDTO;
-import com.technicalchallenge.dto.TradeDTO;
-import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.specification.TradeSpecification;
@@ -37,9 +35,6 @@ public class TradeSearchService {
     private TradeSearchValidator tradeSearchValidator;
 
     @Autowired
-    private TradeMapper tradeMapper;
-
-    @Autowired
     private TradeRepository tradeRepository;
 
     /**
@@ -56,7 +51,7 @@ public class TradeSearchService {
      * @param SearchTradeByCriteria trade unique identifier
      * @return search results
      */
-    public List<TradeDTO> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
+    public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
 
         tradeSearchValidator.validateSearch(searchTradeByCriteria);
         logger.debug("Search validation passed to find trade");
@@ -64,9 +59,7 @@ public class TradeSearchService {
         Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
         logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
 
-        return tradeRepository.findAll(specification).stream()
-                .map(tradeMapper::toDto)
-                .toList();
+        return tradeRepository.findAll(specification);
     }
 
     /**
@@ -89,7 +82,7 @@ public class TradeSearchService {
      * @param SortDTO               Custom sort
      * @return returns filtered search results
      */
-    public Page<TradeDTO> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
+    public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
             SortDTO sortFields) {
 
         tradeSearchValidator.validateSearch(searchTradeByCriteria);
@@ -145,7 +138,7 @@ public class TradeSearchService {
 
         logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
 
-        return tradeRepository.findAll(specification, pageable).map(tradeMapper::toDto);
+        return tradeRepository.findAll(specification, pageable);
     }
 
     /**
@@ -162,7 +155,7 @@ public class TradeSearchService {
      * @param query trade unique identifier
      * @return powerful results
      */
-    public List<TradeDTO> getAllTradesByRSQL(String query) {
+    public List<Trade> getAllTradesByRSQL(String query) {
 
         tradeSearchValidator.validateRSQLSearch(query);
         logger.debug("Query validation passed to find trade");
@@ -170,9 +163,7 @@ public class TradeSearchService {
         Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
         logger.info("Retrieving all trades by rsql: {}", query);
 
-        return tradeRepository.findAll(specfication).stream()
-                .map(tradeMapper::toDto)
-                .toList();
+        return tradeRepository.findAll(specfication);
     }
 
 }
