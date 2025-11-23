@@ -3,18 +3,19 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.referencedata.TradeLegNotFoundException;
+import com.technicalchallenge.model.BusinessDayConvention;
+import com.technicalchallenge.model.Currency;
+import com.technicalchallenge.model.HolidayCalendar;
+import com.technicalchallenge.model.Index;
+import com.technicalchallenge.model.LegType;
+import com.technicalchallenge.model.PayRec;
+import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.repository.TradeLegRepository;
+import com.technicalchallenge.validation.ReferenceDataValidator;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
-import com.technicalchallenge.repository.CurrencyRepository;
-import com.technicalchallenge.repository.LegTypeRepository;
-import com.technicalchallenge.repository.IndexRepository;
-import com.technicalchallenge.repository.HolidayCalendarRepository;
-import com.technicalchallenge.repository.ScheduleRepository;
-import com.technicalchallenge.repository.BusinessDayConventionRepository;
-import com.technicalchallenge.repository.PayRecRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -31,21 +32,9 @@ public class TradeLegService {
     @Autowired
     private TradeLegRepository tradeLegRepository;
     @Autowired
-    private CurrencyRepository currencyRepository;
-    @Autowired
-    private LegTypeRepository legTypeRepository;
-    @Autowired
-    private IndexRepository indexRepository;
-    @Autowired
-    private HolidayCalendarRepository holidayCalendarRepository;
-    @Autowired
-    private ScheduleRepository scheduleRepository;
-    @Autowired
-    private BusinessDayConventionRepository businessDayConventionRepository;
-    @Autowired
-    private PayRecRepository payRecRepository;
-    @Autowired
     private TradeValidator tradeValidator;
+    @Autowired
+    private ReferenceDataValidator referenceDataValidator;
 
     public List<TradeLeg> getAllTradeLegs() {
         logger.info("Retrieving all trade legs");
@@ -98,78 +87,43 @@ public class TradeLegService {
         return tradeLegs;
     }
 
+    // UPDATED: Using the ReferenceDataValidator instead of repositories to reduce
+    // code repetition
     private void populateLegReferenceData(TradeLeg leg, TradeLegDTO legDTO) {
+
         // Populate currency by name or ID
-        if (legDTO.getCurrency() != null) {
-            currencyRepository.findByCurrency(legDTO.getCurrency())
-                    .ifPresent(leg::setCurrency);
-        } else if (legDTO.getCurrencyId() != null) {
-            currencyRepository.findById(legDTO.getCurrencyId())
-                    .ifPresent(leg::setCurrency);
-        }
+        Currency currency = referenceDataValidator.validateCurrencyReference(legDTO);
+        leg.setCurrency(currency);
 
         // Populate leg type by name or ID
-        if (legDTO.getLegType() != null) {
-            legTypeRepository.findByType(legDTO.getLegType())
-                    .ifPresent(leg::setLegRateType);
-        } else if (legDTO.getLegTypeId() != null) {
-            legTypeRepository.findById(legDTO.getLegTypeId())
-                    .ifPresent(leg::setLegRateType);
-        }
+        LegType legType = referenceDataValidator.validateLegTypeReference(legDTO);
+        leg.setLegRateType(legType);
 
         // Populate index by name or ID
-        if (legDTO.getIndexName() != null) {
-            indexRepository.findByIndex(legDTO.getIndexName())
-                    .ifPresent(leg::setIndex);
-        } else if (legDTO.getIndexId() != null) {
-            indexRepository.findById(legDTO.getIndexId())
-                    .ifPresent(leg::setIndex);
-        }
+        Index index = referenceDataValidator.validateIndexReference(legDTO);
+        leg.setIndex(index);
 
         // Populate holiday calendar by name or ID
-        if (legDTO.getHolidayCalendar() != null) {
-            holidayCalendarRepository.findByHolidayCalendar(legDTO.getHolidayCalendar())
-                    .ifPresent(leg::setHolidayCalendar);
-        } else if (legDTO.getHolidayCalendarId() != null) {
-            holidayCalendarRepository.findById(legDTO.getHolidayCalendarId())
-                    .ifPresent(leg::setHolidayCalendar);
-        }
+        HolidayCalendar holidayCalendar = referenceDataValidator.validateHolidayCalendarReference(legDTO);
+        leg.setHolidayCalendar(holidayCalendar);
 
         // Populate schedule by name or ID
-        if (legDTO.getCalculationPeriodSchedule() != null) {
-            scheduleRepository.findBySchedule(legDTO.getCalculationPeriodSchedule())
-                    .ifPresent(leg::setCalculationPeriodSchedule);
-        } else if (legDTO.getScheduleId() != null) {
-            scheduleRepository.findById(legDTO.getScheduleId())
-                    .ifPresent(leg::setCalculationPeriodSchedule);
-        }
+        Schedule calculationPerioSchedule = referenceDataValidator.validateScheduleReference(legDTO);
+        leg.setCalculationPeriodSchedule(calculationPerioSchedule);
 
         // Populate payment business day convention by name or ID
-        if (legDTO.getPaymentBusinessDayConvention() != null) {
-            businessDayConventionRepository.findByBdc(legDTO.getPaymentBusinessDayConvention())
-                    .ifPresent(leg::setPaymentBusinessDayConvention);
-        } else if (legDTO.getPaymentBdcId() != null) {
-            businessDayConventionRepository.findById(legDTO.getPaymentBdcId())
-                    .ifPresent(leg::setPaymentBusinessDayConvention);
-        }
+        BusinessDayConvention paymentBusinessDayConvention = referenceDataValidator
+                .validatePaymentBusinessDayConventionReference(legDTO);
+        leg.setPaymentBusinessDayConvention(paymentBusinessDayConvention);
 
         // Populate fixing business day convention by name or ID
-        if (legDTO.getFixingBusinessDayConvention() != null) {
-            businessDayConventionRepository.findByBdc(legDTO.getFixingBusinessDayConvention())
-                    .ifPresent(leg::setFixingBusinessDayConvention);
-        } else if (legDTO.getFixingBdcId() != null) {
-            businessDayConventionRepository.findById(legDTO.getFixingBdcId())
-                    .ifPresent(leg::setFixingBusinessDayConvention);
-        }
+        BusinessDayConvention fixingBusinessDayConvention = referenceDataValidator
+                .validateFixingBusinessDayConventionReference(legDTO);
+        leg.setFixingBusinessDayConvention(fixingBusinessDayConvention);
 
         // Populate pay/receive flag by name or ID
-        if (legDTO.getPayReceiveFlag() != null) {
-            payRecRepository.findByPayRec(legDTO.getPayReceiveFlag())
-                    .ifPresent(leg::setPayReceiveFlag);
-        } else if (legDTO.getPayRecId() != null) {
-            payRecRepository.findById(legDTO.getPayRecId())
-                    .ifPresent(leg::setPayReceiveFlag);
-        }
+        PayRec payRec = referenceDataValidator.validatePayRecReference(legDTO);
+        leg.setPayReceiveFlag(payRec);
     }
 
     public void deleteTradeLeg(Long id) {

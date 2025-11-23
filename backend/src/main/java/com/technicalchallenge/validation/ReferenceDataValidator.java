@@ -6,15 +6,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.technicalchallenge.dto.TradeDTO;
+import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
+import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.model.Counterparty;
+import com.technicalchallenge.model.Currency;
+import com.technicalchallenge.model.HolidayCalendar;
+import com.technicalchallenge.model.Index;
+import com.technicalchallenge.model.LegType;
+import com.technicalchallenge.model.PayRec;
+import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.model.TradeStatus;
 import com.technicalchallenge.model.TradeSubType;
 import com.technicalchallenge.model.TradeType;
 import com.technicalchallenge.service.ApplicationUserService;
 import com.technicalchallenge.service.BookService;
+import com.technicalchallenge.service.BusinessDayConventionService;
 import com.technicalchallenge.service.CounterpartyService;
+import com.technicalchallenge.service.CurrencyService;
+import com.technicalchallenge.service.HolidayCalendarService;
+import com.technicalchallenge.service.IndexService;
+import com.technicalchallenge.service.LegTypeService;
+import com.technicalchallenge.service.PayRecService;
+import com.technicalchallenge.service.ScheduleService;
 import com.technicalchallenge.service.TradeStatusService;
 import com.technicalchallenge.service.TradeTypeService;
 
@@ -44,6 +59,20 @@ public class ReferenceDataValidator {
     private TradeTypeService tradeTypeService;
     @Autowired
     private ApplicationUserService applicationUserService;
+    @Autowired
+    private CurrencyService currencyService;
+    @Autowired
+    private PayRecService payRecService;
+    @Autowired
+    private ScheduleService scheduleService;
+    @Autowired
+    private LegTypeService legTypeService;
+    @Autowired
+    private HolidayCalendarService holidayCalendarService;
+    @Autowired
+    private IndexService indexService;
+    @Autowired
+    private BusinessDayConventionService businessDayConventionService;
 
     // 1. User, book and counterparty must be active, exist and be valid
 
@@ -164,6 +193,8 @@ public class ReferenceDataValidator {
 
     // 2. All reference data must exist and be valid
 
+    // Trade Reference Data
+
     // TradeStatus Validation
     public TradeStatus validateTradeStatusReference(TradeDTO tradeDTO) {
 
@@ -216,6 +247,138 @@ public class ReferenceDataValidator {
         logger.info("TradeSubType validation passed for trade");
 
         throw new ValidationException("TradeSubType Id or name is required");
+    }
+
+    // TradeLeg Reference Data
+
+    // Currency Validation
+    public Currency validateCurrencyReference(TradeLegDTO tradeLegDTO) {
+
+        Long currencyId = tradeLegDTO.getCurrencyId();
+        String currency = tradeLegDTO.getCurrency();
+
+        if (currency != null) {
+            return currencyService.findCurrency(currency);
+        } else if (currencyId != null) {
+            return currencyService.findId(currencyId);
+        }
+
+        logger.info("Currency validation passed for tradeLegs");
+
+        throw new ValidationException("Currency Id or name is required");
+
+    }
+
+    // Pay Rec Validation
+    public PayRec validatePayRecReference(TradeLegDTO tradeLegDTO) {
+
+        Long payRecId = tradeLegDTO.getPayRecId();
+        String payRec = tradeLegDTO.getPayReceiveFlag();
+
+        if (payRec != null) {
+            return payRecService.findPayRec(payRec);
+        } else if (payRecId != null) {
+            return payRecService.findId(payRecId);
+        }
+
+        throw new ValidationException("PayRec Id or name is required");
+
+    }
+
+    // Schedule Validation
+    public Schedule validateScheduleReference(TradeLegDTO tradeLegDTO) {
+
+        Long scheduleId = tradeLegDTO.getScheduleId();
+        String schedule = tradeLegDTO.getCalculationPeriodSchedule();
+
+        if (schedule != null) {
+            return scheduleService.findSchedule(schedule);
+        } else if (scheduleId != null) {
+            return scheduleService.findId(scheduleId);
+        }
+
+        throw new ValidationException("Schedule Id or name is required");
+
+    }
+
+    // LegType Validation
+    public LegType validateLegTypeReference(TradeLegDTO tradeLegDTO) {
+
+        Long legTypeId = tradeLegDTO.getLegTypeId();
+        String type = tradeLegDTO.getLegType();
+
+        if (type != null) {
+            return legTypeService.findLegType(type);
+        } else if (legTypeId != null) {
+            return legTypeService.findId(legTypeId);
+        }
+
+        throw new ValidationException("LegType Id or name is required");
+
+    }
+
+    // Index Validation
+    public Index validateIndexReference(TradeLegDTO tradeLegDTO) {
+
+        Long indexId = tradeLegDTO.getIndexId();
+        String index = tradeLegDTO.getIndexName();
+
+        if (index != null) {
+            return indexService.findIndex(index);
+        } else if (indexId != null) {
+            return indexService.findId(indexId);
+        }
+
+        throw new ValidationException("Index Id or name is required");
+
+    }
+
+    // HolidayCalendar Validation
+    public HolidayCalendar validateHolidayCalendarReference(TradeLegDTO tradeLegDTO) {
+
+        Long holidayCalendarId = tradeLegDTO.getHolidayCalendarId();
+        String holidayCalendar = tradeLegDTO.getHolidayCalendar();
+
+        if (holidayCalendar != null) {
+            return holidayCalendarService.findHolidayCalendar(holidayCalendar);
+        } else if (holidayCalendarId != null) {
+            return holidayCalendarService.findId(holidayCalendarId);
+        }
+
+        throw new ValidationException("HolidayCalendar Id or name is required");
+
+    }
+
+    // PaymentBusinessDayConvention Validation
+    public BusinessDayConvention validatePaymentBusinessDayConventionReference(TradeLegDTO tradeLegDTO) {
+
+        Long paymentBDCId = tradeLegDTO.getPaymentBdcId();
+        String paymentBDC = tradeLegDTO.getPaymentBusinessDayConvention();
+
+        if (paymentBDC != null) {
+            return businessDayConventionService.findBDC(paymentBDC);
+        } else if (paymentBDCId != null) {
+            return businessDayConventionService.findId(paymentBDCId);
+        }
+
+        throw new ValidationException("PaymentBusinessDayConvention Id or name is required");
+
+    }
+
+    // FixingBusinessDayConvention Validation
+    public BusinessDayConvention validateFixingBusinessDayConventionReference(TradeLegDTO tradeLegDTO) {
+
+        Long fixingBDCId = tradeLegDTO.getFixingBdcId();
+        String fixingBDC = tradeLegDTO.getFixingBusinessDayConvention();
+
+        if (fixingBDC != null) {
+            return businessDayConventionService.findBDC(fixingBDC);
+        } else if (fixingBDCId != null) {
+            return businessDayConventionService.findId(fixingBDCId);
+        }
+
+        throw new ValidationException("FixingBusinessDayConvention Id or name is required");
+
     }
 
 }
