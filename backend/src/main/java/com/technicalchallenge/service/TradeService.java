@@ -158,7 +158,7 @@ public class TradeService {
         }
 
         // Create trade entity
-        Trade trade = mapDTOToEntity(tradeDTO);
+        Trade trade = tradeMapper.toEntity(tradeDTO);
         trade.setVersion(1);
         trade.setActive(true);
         trade.setCreatedDate(LocalDateTime.now());
@@ -172,10 +172,10 @@ public class TradeService {
         // Populate reference data
         populateReferenceDataByName(trade, tradeDTO);
 
-        // Create trade legs and cashflows
-        createTradeLegsWithCashflows(tradeDTO, trade);
-
         Trade savedTrade = tradeRepository.save(trade);
+
+        // Create trade legs and cashflows
+        createTradeLegsWithCashflows(tradeDTO, savedTrade);
 
         logger.info("Successfully created trade with ID: {}", savedTrade.getTradeId());
         return savedTrade;
@@ -249,7 +249,7 @@ public class TradeService {
             throw new InActiveException("TraderUser must be active to populate a Trade");
         }
 
-        trade.setTraderUser(traderUser);
+        trade.setTradeInputterUser(inputterUser);
 
     }
 
@@ -304,7 +304,7 @@ public class TradeService {
         tradeRepository.save(existingTrade);
 
         // Create new version
-        Trade amendedTrade = mapDTOToEntity(tradeDTO);
+        Trade amendedTrade = tradeMapper.toEntity(tradeDTO);
         amendedTrade.setTradeId(tradeId);
         amendedTrade.setVersion(existingTrade.getVersion() + 1);
         amendedTrade.setActive(true);
@@ -389,19 +389,6 @@ public class TradeService {
         trade.setLastTouchTimestamp(LocalDateTime.now());
 
         return tradeRepository.save(trade);
-    }
-
-    private Trade mapDTOToEntity(TradeDTO dto) {
-        Trade trade = new Trade();
-        trade.setTradeId(dto.getTradeId());
-        trade.setTradeDate(dto.getTradeDate()); // Fixed field names
-        trade.setTradeStartDate(dto.getTradeStartDate());
-        trade.setTradeMaturityDate(dto.getTradeMaturityDate());
-        trade.setTradeExecutionDate(dto.getTradeExecutionDate());
-        trade.setUtiCode(dto.getUtiCode());
-        trade.setValidityStartDate(dto.getValidityStartDate());
-        trade.setLastTouchTimestamp(LocalDateTime.now());
-        return trade;
     }
 
     // NEW METHOD: Creates Trade Legs with Cashflows (Cleaner Seperation of Concerns

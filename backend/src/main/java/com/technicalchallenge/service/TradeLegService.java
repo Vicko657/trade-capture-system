@@ -2,6 +2,7 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
+import com.technicalchallenge.mapper.TradeLegMapper;
 import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.model.HolidayCalendar;
@@ -35,6 +36,8 @@ public class TradeLegService {
     private TradeValidator tradeValidator;
     @Autowired
     private ReferenceDataValidator referenceDataValidator;
+    @Autowired
+    private TradeLegMapper tradeLegMapper;
 
     public List<TradeLeg> getAllTradeLegs() {
         logger.info("Retrieving all trade legs");
@@ -57,30 +60,29 @@ public class TradeLegService {
     // Creates TradeLegs: Moved creation method out of TradeService
     public List<TradeLeg> createTradeLegs(TradeDTO tradeDTO, Trade savedTrade) {
 
+        // Validate cross legs rules
+        ValidationResult tradeCrossLegValidation = tradeValidator
+                .validateTradeLegConsistency(tradeDTO.getTradeLegs());
+        tradeCrossLegValidation.throwifNotValid();
+
         List<TradeLeg> tradeLegs = new ArrayList<>();
 
         for (int i = 0; i < tradeDTO.getTradeLegs().size(); i++) {
 
             var legDTO = tradeDTO.getTradeLegs().get(i);
 
-            TradeLeg tradeLeg = new TradeLeg();
-
-            // Validate cross legs rules
-            ValidationResult tradeCrossLegValidation = tradeValidator
-                    .validateTradeLegConsistency(tradeDTO.getTradeLegs());
-            tradeCrossLegValidation.throwifNotValid();
-
+            TradeLeg tradeLeg = tradeLegMapper.toEntity(legDTO);
             tradeLeg.setTrade(savedTrade);
-            tradeLeg.setNotional(legDTO.getNotional());
-            tradeLeg.setRate(legDTO.getRate());
             tradeLeg.setActive(true);
             tradeLeg.setCreatedDate(LocalDateTime.now());
 
             // Populate reference data for leg
             populateLegReferenceData(tradeLeg, legDTO);
 
+            TradeLeg savedLeg = tradeLegRepository.save(tradeLeg);
+
             // Adds the Leg into the list
-            tradeLegs.add(tradeLeg);
+            tradeLegs.add(savedLeg);
 
         }
 
