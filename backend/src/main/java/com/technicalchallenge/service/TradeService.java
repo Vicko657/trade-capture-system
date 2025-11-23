@@ -3,6 +3,8 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.exceptions.InActiveException;
+import com.technicalchallenge.exceptions.referencedata.TradeNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.TradeStatusNotFoundException;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
@@ -104,7 +106,7 @@ public class TradeService {
         authorizationService.validateUserPrivileges(userId, "READ_TRADE", null);
 
         return tradeRepository.findByTradeIdAndActiveTrue(tradeId)
-                .orElseThrow(() -> new EntityNotFoundException("Trade not found: " + tradeId));
+                .orElseThrow(() -> new TradeNotFoundException("tradeId", tradeId));
 
     }
 
@@ -314,7 +316,7 @@ public class TradeService {
 
         // Set status to AMENDED
         TradeStatus amendedStatus = tradeStatusRepository.findByTradeStatus("AMENDED")
-                .orElseThrow(() -> new EntityNotFoundException("AMENDED status not found"));
+                .orElseThrow(() -> new TradeStatusNotFoundException("AMENDED"));
         amendedTrade.setTradeStatus(amendedStatus);
 
         Trade savedTrade = tradeRepository.save(amendedTrade);
@@ -350,7 +352,7 @@ public class TradeService {
         authorizationService.validateUserPrivileges(userId, "TERMINATE_TRADE", tradeDTO);
 
         TradeStatus terminatedStatus = tradeStatusRepository.findByTradeStatus("TERMINATED")
-                .orElseThrow(() -> new EntityNotFoundException("TERMINATED status not found"));
+                .orElseThrow(() -> new TradeStatusNotFoundException("TERMINATED"));
 
         trade.setTradeStatus(terminatedStatus);
         trade.setLastTouchTimestamp(LocalDateTime.now());
@@ -381,7 +383,7 @@ public class TradeService {
         authorizationService.validateUserPrivileges(userId, "CANCEL_TRADE", tradeDTO);
 
         TradeStatus cancelledStatus = tradeStatusRepository.findByTradeStatus("CANCELLED")
-                .orElseThrow(() -> new EntityNotFoundException("CANCELLED status not found"));
+                .orElseThrow(() -> new TradeStatusNotFoundException("CANCELLED"));
 
         trade.setTradeStatus(cancelledStatus);
         trade.setLastTouchTimestamp(LocalDateTime.now());

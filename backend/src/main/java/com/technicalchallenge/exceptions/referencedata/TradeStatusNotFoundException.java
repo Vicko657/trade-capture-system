@@ -16,4 +16,9 @@ public class TradeStatusNotFoundException extends EntityNotFoundException {
         super("TradeStatus is not found with " + fieldName + ": " + value);
     }
 
+    //
+    public TradeStatusNotFoundException(String fieldName) {
+        super("TradeStatus is not found with " + fieldName + "status");
+    }
+
 }
