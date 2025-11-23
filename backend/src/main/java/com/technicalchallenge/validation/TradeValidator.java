@@ -108,7 +108,7 @@ public class TradeValidator {
                     errors.add("Floating legs must have an index specified");
                 }
             } else if (legType.equalsIgnoreCase("fixed")) {
-                if (rate > 0) {
+                if (rate == null || rate <= 0) {
                     errors.add("Fixed legs must have a valid rate");
                 }
             }
