@@ -67,5 +67,5 @@ public class TradeLeg {
 
     // Fixed: Creates a new Arraylist of Cashflows each time
     @OneToMany(mappedBy = "tradeLeg", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Cashflow> cashflows = new ArrayList<Cashflow>();
+    private List<Cashflow> cashflows = new ArrayList<>();
 }

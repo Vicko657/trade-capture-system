@@ -62,7 +62,8 @@ public class GlobalExceptionHandler {
                         ValidationException e, HttpServletRequest request) {
 
                 ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                                "Validation Exception", e.getErrors(), null,
+                                "Validation Exception", e.getErrors(), e
+                                                .getMessage(),
                                 LocalDateTime.now(), request.getRequestURI());
 
                 return ResponseEntity.badRequest().body(errorResponse);

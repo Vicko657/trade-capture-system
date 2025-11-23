@@ -1,6 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.PayRecNotFoundException;
 import com.technicalchallenge.model.PayRec;
 import com.technicalchallenge.repository.PayRecRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,19 +34,6 @@ public class PayRecService {
         return payRecRepository.findByPayRec(payRec);
     }
 
-    public void validatePayRec(Long id, String payRec) {
-
-        if (id != null && payRec != null) {
-
-            if (findById(id).isEmpty()) {
-                throw new EntityNotFoundException("PayRec not found by id");
-            } else if (findByPayRec(payRec).isEmpty()) {
-                throw new EntityNotFoundException("PayRec not found by pay/rec");
-            }
-        }
-
-    }
-
     public PayRec save(PayRec payRec) {
         logger.info("Saving pay rec: {}", payRec);
         return payRecRepository.save(payRec);
@@ -55,5 +42,16 @@ public class PayRecService {
     public void deleteById(Long id) {
         logger.warn("Deleting pay rec with id: {}", id);
         payRecRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for Trade Leg Service
+    public PayRec findId(Long id) {
+        logger.debug("Retrieving pay rec by id: {}", id);
+        return payRecRepository.findById(id).orElseThrow(() -> new PayRecNotFoundException("payRecId", id));
+    }
+
+    public PayRec findPayRec(String payRec) {
+        logger.debug("Retrieving pay rec by pay/rec: {}", payRec);
+        return payRecRepository.findByPayRec(payRec).orElseThrow(() -> new PayRecNotFoundException("payRec", payRec));
     }
 }

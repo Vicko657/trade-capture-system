@@ -1,16 +1,11 @@
 package com.technicalchallenge.controller;
 
-import com.technicalchallenge.dto.PaginationDTO;
-import com.technicalchallenge.dto.SearchTradeByCriteria;
-import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
-import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -97,24 +92,16 @@ public class TradeController {
     public ResponseEntity<?> createTrade(
             @Parameter(description = "Trade details for creation", required = true) @Valid @RequestBody TradeDTO tradeDTO,
             @Parameter(description = "Unique identifier of the user to validate", required = true) String userId) {
+
         logger.info("Creating new trade: {}", tradeDTO);
-        try {
-            Trade trade = tradeMapper.toEntity(tradeDTO);
-            tradeService.populateReferenceDataByName(trade, tradeDTO);
 
-            // Validation for a missing Book or Counterparty
-            if (tradeDTO.getBookName() == null || tradeDTO.getCounterpartyName() == null) {
-                return ResponseEntity.badRequest().body("Book and Counterparty are required");
-            }
+        Trade trade = tradeMapper.toEntity(tradeDTO);
+        tradeService.populateReferenceDataByName(trade, tradeDTO);
 
-            Trade savedTrade = tradeService.saveTrade(trade, tradeDTO);
-            TradeDTO responseDTO = tradeMapper.toDto(savedTrade);
-            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        Trade savedTrade = tradeService.saveTrade(trade, tradeDTO);
+        TradeDTO responseDTO = tradeMapper.toDto(savedTrade);
 
-        } catch (Exception e) {
-            logger.error("Error updating trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error updating trade: " + e.getMessage());
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
 
     }
 
@@ -132,20 +119,17 @@ public class TradeController {
             @Parameter(description = "Unique identifier of the trade to update", required = true) @PathVariable Long id,
             @Parameter(description = "Updated trade details", required = true) @Valid @RequestBody TradeDTO tradeDTO) {
         logger.info("Updating trade with id: {}", id);
-        try {
-            // Fixed: Ensure the ID matches - If statement to validate if tradeId and id are
-            // not equal
-            if (!(tradeDTO.getTradeId()).equals(id)) {
-                return ResponseEntity.badRequest().body("Trade ID in path must match Trade ID in request body");
-            }
 
-            Trade amendedTrade = tradeService.amendTrade(id, tradeDTO);
-            TradeDTO responseDTO = tradeMapper.toDto(amendedTrade);
-            return ResponseEntity.ok(responseDTO);
-        } catch (Exception e) {
-            logger.error("Error updating trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error updating trade: " + e.getMessage());
+        // Fixed: Ensure the ID matches - If statement to validate if tradeId and id are
+        // not equal
+        if (!(tradeDTO.getTradeId()).equals(id)) {
+            return ResponseEntity.badRequest().body("Trade ID in path must match Trade ID in request body");
         }
+
+        Trade amendedTrade = tradeService.amendTrade(id, tradeDTO);
+        TradeDTO responseDTO = tradeMapper.toDto(amendedTrade);
+        return ResponseEntity.ok(responseDTO);
+
     }
 
     @DeleteMapping("/{id}")
@@ -160,16 +144,13 @@ public class TradeController {
     public ResponseEntity<?> deleteTrade(
             @Parameter(description = "Unique identifier of the trade to delete", required = true) @PathVariable Long id) {
         logger.info("Deleting trade with id: {}", id);
-        try {
-            tradeService.deleteTrade(id);
-            // Fixed: Changed the returned response status from
-            // ResponseEntity.ok().body("Trade cancelled successfully");, to
-            // ResponseEntity.noContent().build();
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            logger.error("Error deleting trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error deleting trade: " + e.getMessage());
-        }
+
+        tradeService.deleteTrade(id);
+        // Fixed: Changed the returned response status from
+        // ResponseEntity.ok().body("Trade cancelled successfully");, to
+        // ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build();
+
     }
 
     @PostMapping("/{id}/terminate")
@@ -185,14 +166,11 @@ public class TradeController {
     public ResponseEntity<?> terminateTrade(
             @Parameter(description = "Unique identifier of the trade to terminate", required = true) @PathVariable Long id) {
         logger.info("Terminating trade with id: {}", id);
-        try {
-            Trade terminatedTrade = tradeService.terminateTrade(id);
-            TradeDTO responseDTO = tradeMapper.toDto(terminatedTrade);
-            return ResponseEntity.ok(responseDTO);
-        } catch (EntityNotFoundException e) {
-            logger.error("Error terminating trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error terminating trade: " + e.getMessage());
-        }
+
+        Trade terminatedTrade = tradeService.terminateTrade(id);
+        TradeDTO responseDTO = tradeMapper.toDto(terminatedTrade);
+        return ResponseEntity.ok(responseDTO);
+
     }
 
     @PostMapping("/{id}/cancel")
@@ -208,84 +186,10 @@ public class TradeController {
     public ResponseEntity<?> cancelTrade(
             @Parameter(description = "Unique identifier of the trade to cancel", required = true) @PathVariable Long id) {
         logger.info("Cancelling trade with id: {}", id);
-        try {
-            Trade cancelledTrade = tradeService.cancelTrade(id);
-            TradeDTO responseDTO = tradeMapper.toDto(cancelledTrade);
-            return ResponseEntity.ok(responseDTO);
-        } catch (Exception e) {
-            logger.error("Error cancelling trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error cancelling trade: " + e.getMessage());
-        }
-    }
 
-    @Operation(summary = "Get a result of paginated filtered trades by filter", description = "Returns a page of trades, that can be filtered, paginated or sorted")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated filtered trades", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
-            @ApiResponse(responseCode = "204", description = "No Trades found"),
-            @ApiResponse(responseCode = "401", description = "User's access denied"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/filter")
-    @PreAuthorize("hasAuthority('READ_TRADE')")
-    public ResponseEntity<Page<TradeDTO>> getAllTrades(@Valid @RequestParam SearchTradeByCriteria searchTradeByCriteria,
-            PaginationDTO pagination, SortDTO sort) {
-
-        Page<TradeDTO> trades = tradeService.getAllTrades(searchTradeByCriteria, pagination, sort)
-                .map(tradeMapper::toDto);
-
-        if (trades.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(trades);
-        }
-
-    }
-
-    @Operation(summary = "Get all trades by rsql", description = "Retrieves a list of trades filtered by RSQL JPA Spring Boot starter query plugin, io.github.perplexhub:rsql-jpa-spring-boot-starter, to process dynamic RSQL query strings")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades by RSQL", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
-            @ApiResponse(responseCode = "204", description = "No Trades found"),
-            @ApiResponse(responseCode = "401", description = "User's access denied"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/rsql")
-    @PreAuthorize("hasAuthority('READ_TRADE')")
-    public ResponseEntity<List<TradeDTO>> getTradesByRSQL(
-            @Valid @RequestParam(value = "query", required = false) String query) {
-
-        List<TradeDTO> trades = tradeService.getAllTradesByRSQL(query).stream()
-                .map(tradeMapper::toDto)
-                .toList();
-
-        if (trades.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(trades);
-        }
-
-    }
-
-    @Operation(summary = "Get all trades by search criteria", description = "Retrieves Trades by counterparty, book, trader, status, date ranges and returns comprehensive trade information including legs and cashflows.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved all trades under the searched criteria", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TradeDTO.class))),
-            @ApiResponse(responseCode = "204", description = "No Trades found"),
-            @ApiResponse(responseCode = "401", description = "User's access denied"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/search")
-    @PreAuthorize("hasAuthority('READ_TRADE')")
-    public ResponseEntity<List<TradeDTO>> getAllTradesByCriteria(
-            @Valid SearchTradeByCriteria searchTradeByCriteria) {
-
-        List<TradeDTO> trades = tradeService.getAllTradesByCriteria(searchTradeByCriteria).stream()
-                .map(tradeMapper::toDto)
-                .toList();
-
-        if (trades.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(trades);
-        }
+        Trade cancelledTrade = tradeService.cancelTrade(id);
+        TradeDTO responseDTO = tradeMapper.toDto(cancelledTrade);
+        return ResponseEntity.ok(responseDTO);
 
     }
 

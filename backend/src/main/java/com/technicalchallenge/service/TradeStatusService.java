@@ -1,6 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.TradeStatusNotFoundException;
 import com.technicalchallenge.model.TradeStatus;
 import com.technicalchallenge.repository.TradeStatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import java.util.Optional;
 public class TradeStatusService {
     private static final Logger logger = LoggerFactory.getLogger(TradeStatusService.class);
 
+    // TradeStatus CRUD Interface
     @Autowired
     private TradeStatusRepository tradeStatusRepository;
 
@@ -29,16 +30,6 @@ public class TradeStatusService {
         return tradeStatusRepository.findById(id);
     }
 
-    public void validateTradeStatus(Long id) {
-
-        if (id != null) {
-            if (findById(id).isEmpty()) {
-                throw new EntityNotFoundException("TradeStatus not found by id");
-            }
-        }
-
-    }
-
     public TradeStatus save(TradeStatus tradeStatus) {
         logger.info("Saving trade status: {}", tradeStatus);
         return tradeStatusRepository.save(tradeStatus);
@@ -47,5 +38,16 @@ public class TradeStatusService {
     public void deleteById(Long id) {
         logger.warn("Deleting trade status with id: {}", id);
         tradeStatusRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for Trade Service
+    public TradeStatus findTradeStatusId(Long id) {
+        return tradeStatusRepository.findById(id)
+                .orElseThrow(() -> new TradeStatusNotFoundException("tradeStatusId", id));
+    }
+
+    public TradeStatus findTradeStatus(String status) {
+        return tradeStatusRepository.findByTradeStatus(status)
+                .orElseThrow(() -> new TradeStatusNotFoundException("tradeStatus", status));
     }
 }

@@ -1,7 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
-import com.technicalchallenge.exceptions.InActiveException;
+import com.technicalchallenge.exceptions.referencedata.UserNotFoundException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.repository.ApplicationUserRepository;
 import lombok.AllArgsConstructor;
@@ -33,27 +32,8 @@ public class ApplicationUserService {
     public ApplicationUser getUserById(Long id) {
         logger.debug("Retrieving user by id: {}", id);
 
-        ApplicationUser user = applicationUserRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found by id" + id));
-
-        // Checks if user is active
-        if (!user.isActive()) {
-            throw new InActiveException("User must be active");
-        }
-
+        ApplicationUser user = findUserId(id);
         return user;
-    }
-
-    public ApplicationUser getUserByUserName(String userName) {
-        logger.debug("Retrieving user by userName: {}", userName);
-        return applicationUserRepository.findByFirstName(userName)
-                .orElseThrow(() -> new EntityNotFoundException("User not found by userName" + userName));
-    }
-
-    public ApplicationUser getUserByLoginId(String loginId) {
-        logger.debug("Retrieving user by login id: {}", loginId);
-        return applicationUserRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found by loginId" + loginId));
     }
 
     public ApplicationUser saveUser(ApplicationUser user) {
@@ -82,4 +62,23 @@ public class ApplicationUserService {
         // version and lastModifiedTimestamp handled by entity listeners
         return applicationUserRepository.save(existingUser);
     }
+
+    // Checks the Reference Data for Trade Service
+    public ApplicationUser findUserId(Long id) {
+        return applicationUserRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("userId", id));
+    }
+
+    public ApplicationUser findFirstName(String firstName) {
+        return applicationUserRepository.findByFirstName(
+                firstName)
+                .orElseThrow(() -> new UserNotFoundException("firstName", firstName));
+    }
+
+    public ApplicationUser findLoginId(String loginId) {
+        logger.debug("Retrieving user by login id: {}", loginId);
+        return applicationUserRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new UserNotFoundException("loginId", loginId));
+    }
+
 }

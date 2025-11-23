@@ -1,6 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.ScheduleNotFoundException;
 import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.repository.ScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,19 +34,6 @@ public class ScheduleService {
         return scheduleRepository.findBySchedule(schduele);
     }
 
-    public void validateSchedule(Long id, String schedule) {
-
-        if (id != null && schedule != null) {
-
-            if (findById(id).isEmpty()) {
-                throw new EntityNotFoundException("Schedule not found by id");
-            } else if (findBySchedule(schedule).isEmpty()) {
-                throw new EntityNotFoundException("Schedule not found by schedule");
-            }
-        }
-
-    }
-
     public Schedule save(Schedule schedule) {
         logger.info("Saving schedule: {}", schedule);
         return scheduleRepository.save(schedule);
@@ -55,5 +42,17 @@ public class ScheduleService {
     public void deleteById(Long id) {
         logger.warn("Deleting schedule with id: {}", id);
         scheduleRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for TradeLeg Service
+    public Schedule findId(Long id) {
+        logger.debug("Retrieving schedule by id: {}", id);
+        return scheduleRepository.findById(id).orElseThrow(() -> new ScheduleNotFoundException("scheduleId", id));
+    }
+
+    public Schedule findSchedule(String schedule) {
+        logger.debug("Retrieving schedule by schedule: {}", schedule);
+        return scheduleRepository.findBySchedule(schedule)
+                .orElseThrow(() -> new ScheduleNotFoundException("schedule", schedule));
     }
 }

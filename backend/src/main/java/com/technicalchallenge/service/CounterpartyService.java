@@ -1,7 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
-import com.technicalchallenge.exceptions.InActiveException;
+import com.technicalchallenge.exceptions.referencedata.CounterpartyNotFoundException;
 import com.technicalchallenge.model.Counterparty;
 import com.technicalchallenge.repository.CounterpartyRepository;
 
@@ -13,6 +12,7 @@ import java.util.Optional;
 
 @Service
 public class CounterpartyService {
+
     @Autowired
     private CounterpartyRepository counterpartyRepository;
 
@@ -28,31 +28,22 @@ public class CounterpartyService {
         return counterpartyRepository.findByName(name);
     }
 
-    public void validateCounterparty(Long id, String name) {
-        Counterparty counterparty = null;
-
-        if (id != null && name != null) {
-
-            if (getCounterpartyById(id).isEmpty()) {
-                throw new EntityNotFoundException("Counterparty not found by id");
-            } else if (getCounterpartyByName(name).isEmpty()) {
-                throw new EntityNotFoundException("Counterparty not found by name");
-            }
-            counterparty = getCounterpartyById(id).get();
-
-            if (!counterparty.isActive()) {
-                throw new InActiveException("Counterparty must be active");
-            }
-
-        }
-
-    }
-
     public Counterparty saveCounterparty(Counterparty counterparty) {
         return counterpartyRepository.save(counterparty);
     }
 
     public void deleteCounterparty(Long id) {
         counterpartyRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for Trade Service
+    public Counterparty findCounterpartyId(Long id) {
+        return counterpartyRepository.findById(id)
+                .orElseThrow(() -> new CounterpartyNotFoundException("counterpartyId", id));
+    }
+
+    public Counterparty findCounterpartyName(String counterpartyName) {
+        return counterpartyRepository.findByName(counterpartyName)
+                .orElseThrow(() -> new CounterpartyNotFoundException("counterpartyName", counterpartyName));
     }
 }

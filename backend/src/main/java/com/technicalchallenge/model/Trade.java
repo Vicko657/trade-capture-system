@@ -3,6 +3,7 @@ package com.technicalchallenge.model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -70,5 +71,5 @@ public class Trade {
     private LocalDateTime deactivatedDate;
 
     @OneToMany(mappedBy = "trade", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TradeLeg> tradeLegs;
+    private List<TradeLeg> tradeLegs = new ArrayList<>();
 }

@@ -1,6 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.IndexNotFoundException;
 import com.technicalchallenge.model.Index;
 import com.technicalchallenge.repository.IndexRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,19 +34,6 @@ public class IndexService {
         return indexRepository.findByIndex(index);
     }
 
-    public void validateIndex(Long id, String index) {
-
-        if (id != null && index != null) {
-
-            if (findById(id).isEmpty()) {
-                throw new EntityNotFoundException("Index not found by id");
-            } else if (findByIndex(index).isEmpty()) {
-                throw new EntityNotFoundException("Index not found by index");
-            }
-        }
-
-    }
-
     public Index save(Index index) {
         logger.info("Saving index: {}", index);
         return indexRepository.save(index);
@@ -56,4 +43,16 @@ public class IndexService {
         logger.warn("Deleting index with id: {}", id);
         indexRepository.deleteById(id);
     }
+
+    // Checks the Reference Data for TradeLeg Service
+    public Index findId(Long id) {
+        logger.debug("Retrieving index by id: {}", id);
+        return indexRepository.findById(id).orElseThrow(() -> new IndexNotFoundException("indexId", id));
+    }
+
+    public Index findIndex(String index) {
+        logger.debug("Retrieving index by index: {}", index);
+        return indexRepository.findByIndex(index).orElseThrow(() -> new IndexNotFoundException("index", index));
+    }
+
 }

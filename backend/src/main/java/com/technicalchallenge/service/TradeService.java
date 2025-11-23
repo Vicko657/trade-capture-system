@@ -1,37 +1,25 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.dto.PaginationDTO;
-import com.technicalchallenge.dto.SearchTradeByCriteria;
-import com.technicalchallenge.dto.SortDTO;
 import com.technicalchallenge.dto.TradeDTO;
-import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.InActiveException;
+import com.technicalchallenge.exceptions.referencedata.TradeNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.TradeStatusNotFoundException;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.*;
 import com.technicalchallenge.repository.*;
-import com.technicalchallenge.specification.TradeSpecification;
+import com.technicalchallenge.validation.ReferenceDataValidator;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
 
-import io.github.perplexhub.rsql.RSQLJPASupport;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Trade service class provides business logic and operations relating
@@ -61,39 +49,15 @@ public class TradeService {
     @Autowired
     private TradeRepository tradeRepository;
     @Autowired
-    private TradeLegRepository tradeLegRepository;
+    private TradeLegService tradeLegService;
     @Autowired
-    private CashflowRepository cashflowRepository;
+    private CashflowService cashflowService;
     @Autowired
     private TradeStatusRepository tradeStatusRepository;
     @Autowired
-    private BookRepository bookRepository;
-    @Autowired
-    private CounterpartyRepository counterpartyRepository;
-    @Autowired
-    private ApplicationUserRepository applicationUserRepository;
-    @Autowired
-    private TradeTypeRepository tradeTypeRepository;
-    @Autowired
-    private TradeSubTypeRepository tradeSubTypeRepository;
-    @Autowired
-    private CurrencyRepository currencyRepository;
-    @Autowired
-    private LegTypeRepository legTypeRepository;
-    @Autowired
-    private IndexRepository indexRepository;
-    @Autowired
-    private HolidayCalendarRepository holidayCalendarRepository;
-    @Autowired
-    private ScheduleRepository scheduleRepository;
-    @Autowired
-    private BusinessDayConventionRepository businessDayConventionRepository;
-    @Autowired
-    private PayRecRepository payRecRepository;
-    @Autowired
-    private AdditionalInfoService additionalInfoService;
-    @Autowired
     private TradeValidator tradeValidator;
+    @Autowired
+    private ReferenceDataValidator referenceDataValidator;
     @Autowired
     private AuthorizationService authorizationService;
 
@@ -142,7 +106,7 @@ public class TradeService {
         authorizationService.validateUserPrivileges(userId, "READ_TRADE", null);
 
         return tradeRepository.findByTradeIdAndActiveTrue(tradeId)
-                .orElseThrow(() -> new EntityNotFoundException("Trade not found: " + tradeId));
+                .orElseThrow(() -> new TradeNotFoundException("tradeId", tradeId));
 
     }
 
@@ -185,10 +149,6 @@ public class TradeService {
         ValidationResult tradeBusinessValidation = tradeValidator.validateTradeBusinessRules(tradeDTO);
         tradeBusinessValidation.throwifNotValid();
 
-        // Validate cross legs rules
-        ValidationResult tradeCrossLegValidation = tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs());
-        tradeCrossLegValidation.throwifNotValid();
-
         // Generate trade ID if not provided
         if (tradeDTO.getTradeId() == null) {
             // Generate sequential trade ID starting from 10000
@@ -198,7 +158,7 @@ public class TradeService {
         }
 
         // Create trade entity
-        Trade trade = mapDTOToEntity(tradeDTO);
+        Trade trade = tradeMapper.toEntity(tradeDTO);
         trade.setVersion(1);
         trade.setActive(true);
         trade.setCreatedDate(LocalDateTime.now());
@@ -234,36 +194,35 @@ public class TradeService {
         }
     }
 
-    // FIXED: Populate reference data by names from DTO
+    // FIXED: Populate reference data by names from DTO.
+    // UPDATED: Using the ReferenceDataValidator instead of repositories to reduce
+    // code repetition.
     public void populateReferenceDataByName(Trade trade, TradeDTO tradeDTO) {
         logger.debug("Populating reference data for trade");
 
         // Populate Book
-        if (tradeDTO.getBookName() != null) {
-            bookRepository.findByBookName(tradeDTO.getBookName())
-                    .ifPresent(trade::setBook);
-        } else if (tradeDTO.getBookId() != null) {
-            bookRepository.findById(tradeDTO.getBookId())
-                    .ifPresent(trade::setBook);
+        Book book = referenceDataValidator.validateBookReference(tradeDTO);
+
+        if (!book.isActive()) {
+            throw new InActiveException("Book must be active to populate a Trade");
         }
+        logger.debug("Book is active");
+
+        trade.setBook(book);
 
         // Populate Counterparty
-        if (tradeDTO.getCounterpartyName() != null) {
-            counterpartyRepository.findByName(tradeDTO.getCounterpartyName())
-                    .ifPresent(trade::setCounterparty);
-        } else if (tradeDTO.getCounterpartyId() != null) {
-            counterpartyRepository.findById(tradeDTO.getCounterpartyId())
-                    .ifPresent(trade::setCounterparty);
+        Counterparty counterparty = referenceDataValidator.validateCounterpartyReference(tradeDTO);
+
+        if (!counterparty.isActive()) {
+            throw new InActiveException("Counterparty must be active to populate a Trade");
         }
+        logger.debug("Counterparty is active");
+
+        trade.setCounterparty(counterparty);
 
         // Populate TradeStatus
-        if (tradeDTO.getTradeStatus() != null) {
-            tradeStatusRepository.findByTradeStatus(tradeDTO.getTradeStatus())
-                    .ifPresent(trade::setTradeStatus);
-        } else if (tradeDTO.getTradeStatusId() != null) {
-            tradeStatusRepository.findById(tradeDTO.getTradeStatusId())
-                    .ifPresent(trade::setTradeStatus);
-        }
+        TradeStatus tradeStatus = referenceDataValidator.validateTradeStatusReference(tradeDTO);
+        trade.setTradeStatus(tradeStatus);
 
         // Populate other reference data
         populateUserReferences(trade, tradeDTO);
@@ -271,100 +230,40 @@ public class TradeService {
     }
 
     private void populateUserReferences(Trade trade, TradeDTO tradeDTO) {
-        // Handle trader user by name or ID with enhanced logging
-        if (tradeDTO.getTraderUserName() != null) {
-            logger.debug("Looking up trader user by name: {}", tradeDTO.getTraderUserName());
-            String[] nameParts = tradeDTO.getTraderUserName().trim().split("\\s+");
-            if (nameParts.length >= 1) {
-                String firstName = nameParts[0];
-                logger.debug("Searching for user with firstName: {}", firstName);
-                Optional<ApplicationUser> userOpt = applicationUserRepository.findByFirstName(firstName);
-                if (userOpt.isPresent()) {
-                    trade.setTraderUser(userOpt.get());
-                    logger.debug("Found trader user: {} {}", userOpt.get().getFirstName(), userOpt.get().getLastName());
-                } else {
-                    logger.warn("Trader user not found with firstName: {}", firstName);
-                    // Try with loginId as fallback
-                    Optional<ApplicationUser> byLoginId = applicationUserRepository
-                            .findByLoginId(tradeDTO.getTraderUserName().toLowerCase());
-                    if (byLoginId.isPresent()) {
-                        trade.setTraderUser(byLoginId.get());
-                        logger.debug("Found trader user by loginId: {}", tradeDTO.getTraderUserName());
-                    } else {
-                        logger.warn("Trader user not found by loginId either: {}", tradeDTO.getTraderUserName());
-                    }
-                }
-            }
-        } else if (tradeDTO.getTraderUserId() != null) {
-            applicationUserRepository.findById(tradeDTO.getTraderUserId())
-                    .ifPresent(trade::setTraderUser);
+
+        // Populate TraderUserReference
+        ApplicationUser traderUser = referenceDataValidator.validateTraderUserReference(tradeDTO);
+
+        // Checks if traderUser is active
+        if (!traderUser.isActive()) {
+            throw new InActiveException("TraderUser must be active to populate a Trade");
         }
 
-        // Handle inputter user by name or ID with enhanced logging
-        if (tradeDTO.getInputterUserName() != null) {
-            logger.debug("Looking up inputter user by name: {}", tradeDTO.getInputterUserName());
-            String[] nameParts = tradeDTO.getInputterUserName().trim().split("\\s+");
-            if (nameParts.length >= 1) {
-                String firstName = nameParts[0];
-                logger.debug("Searching for inputter with firstName: {}", firstName);
-                Optional<ApplicationUser> userOpt = applicationUserRepository.findByFirstName(firstName);
-                if (userOpt.isPresent()) {
-                    trade.setTradeInputterUser(userOpt.get());
-                    logger.debug("Found inputter user: {} {}", userOpt.get().getFirstName(),
-                            userOpt.get().getLastName());
-                } else {
-                    logger.warn("Inputter user not found with firstName: {}", firstName);
-                    // Try with loginId as fallback
-                    Optional<ApplicationUser> byLoginId = applicationUserRepository
-                            .findByLoginId(tradeDTO.getInputterUserName().toLowerCase());
-                    if (byLoginId.isPresent()) {
-                        trade.setTradeInputterUser(byLoginId.get());
-                        logger.debug("Found inputter user by loginId: {}", tradeDTO.getInputterUserName());
-                    } else {
-                        logger.warn("Inputter user not found by loginId either: {}", tradeDTO.getInputterUserName());
-                    }
-                }
-            }
-        } else if (tradeDTO.getTradeInputterUserId() != null) {
-            applicationUserRepository.findById(tradeDTO.getTradeInputterUserId())
-                    .ifPresent(trade::setTradeInputterUser);
+        trade.setTraderUser(traderUser);
+
+        // Populate InputterUserReference
+        ApplicationUser inputterUser = referenceDataValidator.validateInputterUserReference(tradeDTO);
+
+        // Checks if traderUser is active
+        if (!inputterUser.isActive()) {
+            throw new InActiveException("TraderUser must be active to populate a Trade");
         }
+
+        trade.setTradeInputterUser(inputterUser);
+
     }
 
     private void populateTradeTypeReferences(Trade trade, TradeDTO tradeDTO) {
-        if (tradeDTO.getTradeType() != null) {
-            logger.debug("Looking up trade type: {}", tradeDTO.getTradeType());
-            Optional<TradeType> tradeTypeOpt = tradeTypeRepository.findByTradeType(tradeDTO.getTradeType());
-            if (tradeTypeOpt.isPresent()) {
-                trade.setTradeType(tradeTypeOpt.get());
-                logger.debug("Found trade type: {} with ID: {}", tradeTypeOpt.get().getTradeType(),
-                        tradeTypeOpt.get().getId());
-            } else {
-                logger.warn("Trade type not found: {}", tradeDTO.getTradeType());
-            }
-        } else if (tradeDTO.getTradeTypeId() != null) {
-            tradeTypeRepository.findById(tradeDTO.getTradeTypeId())
-                    .ifPresent(trade::setTradeType);
-        }
 
-        if (tradeDTO.getTradeSubType() != null) {
-            Optional<TradeSubType> tradeSubTypeOpt = tradeSubTypeRepository
-                    .findByTradeSubType(tradeDTO.getTradeSubType());
-            if (tradeSubTypeOpt.isPresent()) {
-                trade.setTradeSubType(tradeSubTypeOpt.get());
-            } else {
-                List<TradeSubType> allSubTypes = tradeSubTypeRepository.findAll();
-                for (TradeSubType subType : allSubTypes) {
-                    if (subType.getTradeSubType().equalsIgnoreCase(tradeDTO.getTradeSubType())) {
-                        trade.setTradeSubType(subType);
-                        break;
-                    }
-                }
-            }
-        } else if (tradeDTO.getTradeSubTypeId() != null) {
-            tradeSubTypeRepository.findById(tradeDTO.getTradeSubTypeId())
-                    .ifPresent(trade::setTradeSubType);
-        }
+        // Populate TradeType
+        TradeType tradeType = referenceDataValidator.validateTradeTypeReference(tradeDTO);
+
+        trade.setTradeType(tradeType);
+
+        // Populate TradeSubType
+        TradeSubType tradeSubType = referenceDataValidator.validateTradeSubTypeReference(tradeDTO);
+
+        trade.setTradeSubType(tradeSubType);
     }
 
     // NEW METHOD: Delete trade (mark as cancelled)
@@ -405,7 +304,7 @@ public class TradeService {
         tradeRepository.save(existingTrade);
 
         // Create new version
-        Trade amendedTrade = mapDTOToEntity(tradeDTO);
+        Trade amendedTrade = tradeMapper.toEntity(tradeDTO);
         amendedTrade.setTradeId(tradeId);
         amendedTrade.setVersion(existingTrade.getVersion() + 1);
         amendedTrade.setActive(true);
@@ -417,7 +316,7 @@ public class TradeService {
 
         // Set status to AMENDED
         TradeStatus amendedStatus = tradeStatusRepository.findByTradeStatus("AMENDED")
-                .orElseThrow(() -> new EntityNotFoundException("AMENDED status not found"));
+                .orElseThrow(() -> new TradeStatusNotFoundException("AMENDED"));
         amendedTrade.setTradeStatus(amendedStatus);
 
         Trade savedTrade = tradeRepository.save(amendedTrade);
@@ -453,7 +352,7 @@ public class TradeService {
         authorizationService.validateUserPrivileges(userId, "TERMINATE_TRADE", tradeDTO);
 
         TradeStatus terminatedStatus = tradeStatusRepository.findByTradeStatus("TERMINATED")
-                .orElseThrow(() -> new EntityNotFoundException("TERMINATED status not found"));
+                .orElseThrow(() -> new TradeStatusNotFoundException("TERMINATED"));
 
         trade.setTradeStatus(terminatedStatus);
         trade.setLastTouchTimestamp(LocalDateTime.now());
@@ -484,7 +383,7 @@ public class TradeService {
         authorizationService.validateUserPrivileges(userId, "CANCEL_TRADE", tradeDTO);
 
         TradeStatus cancelledStatus = tradeStatusRepository.findByTradeStatus("CANCELLED")
-                .orElseThrow(() -> new EntityNotFoundException("CANCELLED status not found"));
+                .orElseThrow(() -> new TradeStatusNotFoundException("CANCELLED"));
 
         trade.setTradeStatus(cancelledStatus);
         trade.setLastTouchTimestamp(LocalDateTime.now());
@@ -492,350 +391,24 @@ public class TradeService {
         return tradeRepository.save(trade);
     }
 
-    private Trade mapDTOToEntity(TradeDTO dto) {
-        Trade trade = new Trade();
-        trade.setTradeId(dto.getTradeId());
-        trade.setTradeDate(dto.getTradeDate()); // Fixed field names
-        trade.setTradeStartDate(dto.getTradeStartDate());
-        trade.setTradeMaturityDate(dto.getTradeMaturityDate());
-        trade.setTradeExecutionDate(dto.getTradeExecutionDate());
-        trade.setUtiCode(dto.getUtiCode());
-        trade.setValidityStartDate(dto.getValidityStartDate());
-        trade.setLastTouchTimestamp(LocalDateTime.now());
-        return trade;
-    }
+    // NEW METHOD: Creates Trade Legs with Cashflows (Cleaner Seperation of Concerns
+    // and easier to debug)
+    public void createTradeLegsWithCashflows(TradeDTO tradeDTO, Trade trade) {
 
-    private void createTradeLegsWithCashflows(TradeDTO tradeDTO, Trade savedTrade) {
-        for (int i = 0; i < tradeDTO.getTradeLegs().size(); i++) {
-            var legDTO = tradeDTO.getTradeLegs().get(i);
+        List<TradeLeg> tradeLegs = tradeLegService.createTradeLegs(tradeDTO, trade);
+        trade.setTradeLegs(tradeLegs);
 
-            TradeLeg tradeLeg = new TradeLeg();
-            tradeLeg.setTrade(savedTrade);
-            tradeLeg.setNotional(legDTO.getNotional());
-            tradeLeg.setRate(legDTO.getRate());
-            tradeLeg.setActive(true);
-            tradeLeg.setCreatedDate(LocalDateTime.now());
+        if (tradeDTO.getTradeStartDate() != null && tradeDTO.getTradeMaturityDate() != null) {
 
-            // Populate reference data for leg
-            populateLegReferenceData(tradeLeg, legDTO);
+            for (TradeLeg leg : tradeLegs) {
+                List<Cashflow> cashflows = cashflowService.generateCashflows(leg, tradeDTO.getTradeStartDate(),
+                        tradeDTO.getTradeMaturityDate());
 
-            TradeLeg savedLeg = tradeLegRepository.save(tradeLeg);
-
-            // Generate cashflows for this leg
-            if (tradeDTO.getTradeStartDate() != null && tradeDTO.getTradeMaturityDate() != null) {
-                generateCashflows(savedLeg, tradeDTO.getTradeStartDate(), tradeDTO.getTradeMaturityDate());
+                leg.setCashflows(cashflows);
             }
-        }
-    }
-
-    private void populateLegReferenceData(TradeLeg leg, TradeLegDTO legDTO) {
-        // Populate currency by name or ID
-        if (legDTO.getCurrency() != null) {
-            currencyRepository.findByCurrency(legDTO.getCurrency())
-                    .ifPresent(leg::setCurrency);
-        } else if (legDTO.getCurrencyId() != null) {
-            currencyRepository.findById(legDTO.getCurrencyId())
-                    .ifPresent(leg::setCurrency);
-        }
-
-        // Populate leg type by name or ID
-        if (legDTO.getLegType() != null) {
-            legTypeRepository.findByType(legDTO.getLegType())
-                    .ifPresent(leg::setLegRateType);
-        } else if (legDTO.getLegTypeId() != null) {
-            legTypeRepository.findById(legDTO.getLegTypeId())
-                    .ifPresent(leg::setLegRateType);
-        }
-
-        // Populate index by name or ID
-        if (legDTO.getIndexName() != null) {
-            indexRepository.findByIndex(legDTO.getIndexName())
-                    .ifPresent(leg::setIndex);
-        } else if (legDTO.getIndexId() != null) {
-            indexRepository.findById(legDTO.getIndexId())
-                    .ifPresent(leg::setIndex);
-        }
-
-        // Populate holiday calendar by name or ID
-        if (legDTO.getHolidayCalendar() != null) {
-            holidayCalendarRepository.findByHolidayCalendar(legDTO.getHolidayCalendar())
-                    .ifPresent(leg::setHolidayCalendar);
-        } else if (legDTO.getHolidayCalendarId() != null) {
-            holidayCalendarRepository.findById(legDTO.getHolidayCalendarId())
-                    .ifPresent(leg::setHolidayCalendar);
-        }
-
-        // Populate schedule by name or ID
-        if (legDTO.getCalculationPeriodSchedule() != null) {
-            scheduleRepository.findBySchedule(legDTO.getCalculationPeriodSchedule())
-                    .ifPresent(leg::setCalculationPeriodSchedule);
-        } else if (legDTO.getScheduleId() != null) {
-            scheduleRepository.findById(legDTO.getScheduleId())
-                    .ifPresent(leg::setCalculationPeriodSchedule);
-        }
-
-        // Populate payment business day convention by name or ID
-        if (legDTO.getPaymentBusinessDayConvention() != null) {
-            businessDayConventionRepository.findByBdc(legDTO.getPaymentBusinessDayConvention())
-                    .ifPresent(leg::setPaymentBusinessDayConvention);
-        } else if (legDTO.getPaymentBdcId() != null) {
-            businessDayConventionRepository.findById(legDTO.getPaymentBdcId())
-                    .ifPresent(leg::setPaymentBusinessDayConvention);
-        }
-
-        // Populate fixing business day convention by name or ID
-        if (legDTO.getFixingBusinessDayConvention() != null) {
-            businessDayConventionRepository.findByBdc(legDTO.getFixingBusinessDayConvention())
-                    .ifPresent(leg::setFixingBusinessDayConvention);
-        } else if (legDTO.getFixingBdcId() != null) {
-            businessDayConventionRepository.findById(legDTO.getFixingBdcId())
-                    .ifPresent(leg::setFixingBusinessDayConvention);
-        }
-
-        // Populate pay/receive flag by name or ID
-        if (legDTO.getPayReceiveFlag() != null) {
-            payRecRepository.findByPayRec(legDTO.getPayReceiveFlag())
-                    .ifPresent(leg::setPayReceiveFlag);
-        } else if (legDTO.getPayRecId() != null) {
-            payRecRepository.findById(legDTO.getPayRecId())
-                    .ifPresent(leg::setPayReceiveFlag);
-        }
-    }
-
-    /**
-     * FIXED: Generate cashflows based on schedule and maturity date
-     */
-    private void generateCashflows(TradeLeg leg, LocalDate startDate, LocalDate maturityDate) {
-        logger.info("Generating cashflows for leg {} from {} to {}", leg.getLegId(), startDate, maturityDate);
-
-        // Use default schedule if not set
-        String schedule = "3M"; // Default to quarterly
-        if (leg.getCalculationPeriodSchedule() != null) {
-            schedule = leg.getCalculationPeriodSchedule().getSchedule();
-        }
-
-        int monthsInterval = parseSchedule(schedule);
-        List<LocalDate> paymentDates = calculatePaymentDates(startDate, maturityDate, monthsInterval);
-
-        for (LocalDate paymentDate : paymentDates) {
-            Cashflow cashflow = new Cashflow();
-            cashflow.setTradeLeg(leg); // Fixed field name
-            cashflow.setValueDate(paymentDate);
-            cashflow.setRate(leg.getRate());
-
-            // Calculate value based on leg type
-            BigDecimal cashflowValue = calculateCashflowValue(leg, monthsInterval);
-            cashflow.setPaymentValue(cashflowValue);
-
-            cashflow.setPayRec(leg.getPayReceiveFlag());
-            cashflow.setPaymentBusinessDayConvention(leg.getPaymentBusinessDayConvention());
-            cashflow.setCreatedDate(LocalDateTime.now());
-            cashflow.setActive(true);
-
-            cashflowRepository.save(cashflow);
-
-            // Fixed: Makes sure the Tradeleg contains the cashflows once they are saved.
-            leg.getCashflows().add(cashflow);
 
         }
 
-        logger.info("Generated {} cashflows for leg {}", paymentDates.size(), leg.getLegId());
-    }
-
-    private int parseSchedule(String schedule) {
-        if (schedule == null || schedule.trim().isEmpty()) {
-            return 3; // Default to quarterly
-        }
-
-        schedule = schedule.trim();
-
-        // Handle common schedule names
-        switch (schedule.toLowerCase()) {
-            case "monthly":
-                return 1;
-            case "quarterly":
-                return 3;
-            case "semi-annually":
-            case "semiannually":
-            case "half-yearly":
-                return 6;
-            case "annually":
-            case "yearly":
-                return 12;
-            default:
-                // Parse "1M", "3M", "12M" format
-                if (schedule.endsWith("M") || schedule.endsWith("m")) {
-                    try {
-                        return Integer.parseInt(schedule.substring(0, schedule.length() - 1));
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("Invalid schedule format: " + schedule);
-                    }
-                }
-                throw new RuntimeException("Invalid schedule format: " + schedule
-                        + ". Supported formats: Monthly, Quarterly, Semi-annually, Annually, or 1M, 3M, 6M, 12M");
-        }
-    }
-
-    private List<LocalDate> calculatePaymentDates(LocalDate startDate, LocalDate maturityDate, int monthsInterval) {
-        List<LocalDate> dates = new ArrayList<>();
-        LocalDate currentDate = startDate.plusMonths(monthsInterval);
-
-        while (!currentDate.isAfter(maturityDate)) {
-            dates.add(currentDate);
-            currentDate = currentDate.plusMonths(monthsInterval);
-        }
-
-        return dates;
-    }
-
-    private BigDecimal calculateCashflowValue(TradeLeg leg, int monthsInterval) {
-        if (leg.getLegRateType() == null) {
-            return BigDecimal.ZERO;
-        }
-
-        String legType = leg.getLegRateType().getType();
-
-        if ("Fixed".equals(legType)) {
-            double notional = leg.getNotional().doubleValue();
-            double rate = leg.getRate();
-            double months = monthsInterval;
-
-            double result = (notional * rate * months) / 12;
-
-            return BigDecimal.valueOf(result);
-        } else if ("Floating".equals(legType)) {
-            return BigDecimal.ZERO;
-        }
-
-        return BigDecimal.ZERO;
-    }
-
-    /**
-     * Trade: Filtered Search
-     * 
-     * <p>
-     * Multi Criteria By counterparty, book, trader, status, date
-     * ranges, paginated filtering and sorting for all trades
-     * 
-     * - Sorts the trades by column name and in order of ASC or DESC,
-     * handles if the sort direction is not filled
-     * 
-     * - Includes a sorted, unsorted page request for the user to
-     * be able to seperately sort or change the pagination
-     * 
-     * </p>
-     * 
-     * @param SearchTradeByCriteria JPA Specification Search
-     * @param PaginationDTO         Custom pagination
-     * @param SortDTO               Custom sort
-     * @return returns filtered search results
-     */
-    public Page<Trade> getAllTrades(SearchTradeByCriteria searchTradeByCriteria, PaginationDTO pagination,
-            SortDTO sortFields) {
-
-        tradeValidator.validateSearch(searchTradeByCriteria);
-
-        logger.debug("Search validation passed to find trade");
-
-        // Sort By
-        String sortColumn;
-        String sortDirection = sortFields.sortDir(); // Default is ASC
-
-        if (sortFields.sortBy() == null || sortFields.sortBy().isBlank()) {
-            sortColumn = "tradeId"; // Default is tradeID
-        } else {
-            sortColumn = sortFields.sortBy();
-        }
-
-        Sort sort = null;
-        if (sortDirection == null) {
-            sort = Sort.unsorted();
-        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())) {
-            sort = Sort.by(sortColumn).ascending();
-        } else if (sortDirection.equalsIgnoreCase(Sort.Direction.DESC.name())) {
-            sort = Sort.by(sortColumn).descending();
-        }
-
-        // Pagination
-
-        Integer pageNo = pagination.pageNo();
-        Integer pageSize = pagination.pageSize();
-        Pageable pageable;
-
-        if (pagination.pageNo() != null && pageSize != null && pageNo > 0 && sort != null) {
-
-            // Page Request with sort parameters applied (Page details and sort details are
-            // not null)
-
-            pageable = PageRequest.of(pageNo - 1, pageSize, sort);
-        } else if (sort == null) {
-
-            // Unsorted page request (With the page details, if the sort is null)
-
-            pageable = PageRequest.of(pageNo - 1, pageSize);
-        } else {
-
-            // No pagination setup and seperates the filtered criteria search
-
-            pageable = Pageable.unpaged();
-        }
-
-        // Filtered multi criteria search
-
-        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-
-        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
-
-        return tradeRepository.findAll(specification, pageable);
-    }
-
-    /**
-     * Trade: RSQL Search
-     * 
-     * <p>
-     * The RSQL plugin automatically builds the JPA specification with
-     * less code and provides filtering support for power users.
-     * 
-     * Used the plugin recommended which saved time:
-     * {@link https://github.com/perplexhub/rsql-jpa-specification}
-     * </p>
-     * 
-     * @param query trade unique identifier
-     * @return powerful results
-     */
-    public List<Trade> getAllTradesByRSQL(String query) {
-
-        tradeValidator.validateRSQLSearch(query);
-        logger.debug("Query validation passed to find trade");
-
-        Specification<Trade> specfication = RSQLJPASupport.toSpecification(query);
-        logger.info("Retrieving all trades by rsql: {}", query);
-        return tradeRepository.findAll(specfication);
-    }
-
-    /**
-     * Trade: Multi Criteria Search
-     * 
-     * <p>
-     * By counterparty, book, trader, status, date ranges
-     * </p>
-     * 
-     * 
-     * FUTURE: Refactor to a much simplier search using aggregated
-     * queries, wasn't initially sure of how complex the search should've been.
-     * 
-     * @param SearchTradeByCriteria trade unique identifier
-     * @return search results
-     */
-    public List<Trade> getAllTradesByCriteria(SearchTradeByCriteria searchTradeByCriteria) {
-
-        tradeValidator.validateSearch(searchTradeByCriteria);
-        logger.debug("Search validation passed to find trade");
-
-        Specification<Trade> specification = TradeSpecification.getTradeCriteria(searchTradeByCriteria);
-        logger.info("Retrieving all trades by criteria: {}", searchTradeByCriteria);
-
-        return tradeRepository.findAll(specification);
     }
 
     // NEW METHOD: Generate the next trade ID (sequential)

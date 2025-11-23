@@ -1,6 +1,6 @@
 package com.technicalchallenge.validation;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.technicalchallenge.exceptions.ValidationException;
@@ -10,17 +10,26 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ValidationResult {
 
-    private final boolean valid;
     private final List<String> errors;
 
-    // isValid - Error list is empty and returns emptylist
+    // isValid - Validation is true and returns emptylist
     public static ValidationResult isValid() {
-        return new ValidationResult(true, Collections.emptyList());
+        return new ValidationResult(new ArrayList<>());
     }
 
-    // isNotValid - Error list has errors and returns list of errors
+    // isNotValid - Validation is false and returns list of errors
     public static ValidationResult isNotValid(List<String> errors) {
-        return new ValidationResult(false, errors);
+        return new ValidationResult(errors);
+    }
+
+    // isValid - Validation is true and returns emptylist
+    public boolean valid() {
+        return errors.isEmpty();
+    }
+
+    // isNotValid - Validation is false and returns list of errors
+    public boolean invalid() {
+        return !errors.isEmpty();
     }
 
     // Getter - Errors
@@ -28,9 +37,8 @@ public class ValidationResult {
         return errors;
     }
 
-    // throws a ValidationException when there is a validation error
     public void throwifNotValid() {
-        if (!valid) {
+        if (invalid()) {
             throw new ValidationException(errors);
         }
     }

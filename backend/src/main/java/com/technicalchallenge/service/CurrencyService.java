@@ -1,6 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.CurrencyNotFoundException;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.repository.CurrencyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,19 +34,6 @@ public class CurrencyService {
         return currencyRepository.findByCurrency(currency);
     }
 
-    public void validateCurrency(Long id, String currency) {
-
-        if (id != null && currency != null) {
-
-            if (findById(id).isEmpty()) {
-                throw new EntityNotFoundException("Currency not found by id");
-            } else if (findByCurrency(currency).isEmpty()) {
-                throw new EntityNotFoundException("Currency not found by currency");
-            }
-        }
-
-    }
-
     public Currency save(Currency currency) {
         logger.info("Saving currency: {}", currency);
         return currencyRepository.save(currency);
@@ -55,5 +42,17 @@ public class CurrencyService {
     public void deleteById(Long id) {
         logger.warn("Deleting currency with id: {}", id);
         currencyRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for Trade Leg Service
+    public Currency findId(Long id) {
+        logger.debug("Retrieving currency by id: {}", id);
+        return currencyRepository.findById(id).orElseThrow(() -> new CurrencyNotFoundException("currencyId", id));
+    }
+
+    public Currency findCurrency(String currency) {
+        logger.debug("Retrieving currency by currency: {}", currency);
+        return currencyRepository.findByCurrency(currency)
+                .orElseThrow(() -> new CurrencyNotFoundException("currency", currency));
     }
 }

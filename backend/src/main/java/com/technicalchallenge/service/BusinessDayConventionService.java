@@ -1,6 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.BusinessDayConventionNotFoundException;
 import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,19 +34,6 @@ public class BusinessDayConventionService {
         return businessDayConventionRepository.findByBdc(bDC);
     }
 
-    public void validateBusinessDayConvention(Long id, String bDC) {
-
-        if (id != null && bDC != null) {
-
-            if (findById(id).isEmpty()) {
-                throw new EntityNotFoundException("BusinessDayConvention not found by id");
-            } else if (findByBDC(bDC).isEmpty()) {
-                throw new EntityNotFoundException("BusinessDayConvention not found by BDC");
-            }
-        }
-
-    }
-
     public BusinessDayConvention save(BusinessDayConvention businessDayConvention) {
         logger.info("Saving business day convention: {}", businessDayConvention);
         return businessDayConventionRepository.save(businessDayConvention);
@@ -55,5 +42,18 @@ public class BusinessDayConventionService {
     public void deleteById(Long id) {
         logger.warn("Deleting business day convention with id: {}", id);
         businessDayConventionRepository.deleteById(id);
+    }
+
+    // Checks the Reference Data for TradeLeg Service
+    public BusinessDayConvention findId(Long id) {
+        logger.debug("Retrieving business day convention by id: {}", id);
+        return businessDayConventionRepository.findById(id)
+                .orElseThrow(() -> new BusinessDayConventionNotFoundException("businessDayConventionId", id));
+    }
+
+    public BusinessDayConvention findBDC(String bDC) {
+        logger.debug("Retrieving business day convention by bdc: {}", bDC);
+        return businessDayConventionRepository.findByBdc(bDC)
+                .orElseThrow(() -> new BusinessDayConventionNotFoundException("businessDayConvention", bDC));
     }
 }
