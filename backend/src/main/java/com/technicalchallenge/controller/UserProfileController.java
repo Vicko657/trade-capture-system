@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class UserProfileController {
     private UserProfileMapper userProfileMapper;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('READ_USER')")
     public List<UserProfileDTO> getAllUserProfiles() {
         return userProfileService.getAllUserProfiles().stream()
                 .map(userProfileMapper::toDto)
@@ -29,6 +31,7 @@ public class UserProfileController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<UserProfileDTO> getUserProfileById(@PathVariable Long id) {
         return userProfileService.getUserProfileById(id)
                 .map(userProfileMapper::toDto)
@@ -37,11 +40,13 @@ public class UserProfileController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('WRITE_USER')")
     public UserProfileDTO createUserProfile(@RequestBody UserProfileDTO userProfileDTO) {
         return userProfileMapper.toDto(userProfileService.saveUserProfile(userProfileMapper.toEntity(userProfileDTO)));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('WRITE_USER')")
     public ResponseEntity<UserProfileDTO> updateUserProfile(@PathVariable Long id,
             @RequestBody UserProfileDTO userProfileDTO) {
         return userProfileService.updateUserProfile(id, userProfileMapper.toEntity(userProfileDTO))
@@ -50,6 +55,7 @@ public class UserProfileController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('DEACTIVATE_USER')")
     public ResponseEntity<Void> deleteUserProfile(@PathVariable Long id) {
         if (userProfileService.deleteUserProfile(id)) {
             return ResponseEntity.noContent().build();
