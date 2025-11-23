@@ -1,7 +1,6 @@
 package com.technicalchallenge.controller;
 
 import com.technicalchallenge.dto.TradeDTO;
-import com.technicalchallenge.exceptions.EntityNotFoundException;
 import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
@@ -93,24 +92,16 @@ public class TradeController {
     public ResponseEntity<?> createTrade(
             @Parameter(description = "Trade details for creation", required = true) @Valid @RequestBody TradeDTO tradeDTO,
             @Parameter(description = "Unique identifier of the user to validate", required = true) String userId) {
+
         logger.info("Creating new trade: {}", tradeDTO);
-        try {
-            Trade trade = tradeMapper.toEntity(tradeDTO);
-            tradeService.populateReferenceDataByName(trade, tradeDTO);
 
-            // Validation for a missing Book or Counterparty
-            if (tradeDTO.getBookName() == null || tradeDTO.getCounterpartyName() == null) {
-                return ResponseEntity.badRequest().body("Book and Counterparty are required");
-            }
+        Trade trade = tradeMapper.toEntity(tradeDTO);
+        tradeService.populateReferenceDataByName(trade, tradeDTO);
 
-            Trade savedTrade = tradeService.saveTrade(trade, tradeDTO);
-            TradeDTO responseDTO = tradeMapper.toDto(savedTrade);
-            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        Trade savedTrade = tradeService.saveTrade(trade, tradeDTO);
+        TradeDTO responseDTO = tradeMapper.toDto(savedTrade);
 
-        } catch (Exception e) {
-            logger.error("Error updating trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error updating trade: " + e.getMessage());
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
 
     }
 
@@ -128,20 +119,17 @@ public class TradeController {
             @Parameter(description = "Unique identifier of the trade to update", required = true) @PathVariable Long id,
             @Parameter(description = "Updated trade details", required = true) @Valid @RequestBody TradeDTO tradeDTO) {
         logger.info("Updating trade with id: {}", id);
-        try {
-            // Fixed: Ensure the ID matches - If statement to validate if tradeId and id are
-            // not equal
-            if (!(tradeDTO.getTradeId()).equals(id)) {
-                return ResponseEntity.badRequest().body("Trade ID in path must match Trade ID in request body");
-            }
 
-            Trade amendedTrade = tradeService.amendTrade(id, tradeDTO);
-            TradeDTO responseDTO = tradeMapper.toDto(amendedTrade);
-            return ResponseEntity.ok(responseDTO);
-        } catch (Exception e) {
-            logger.error("Error updating trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error updating trade: " + e.getMessage());
+        // Fixed: Ensure the ID matches - If statement to validate if tradeId and id are
+        // not equal
+        if (!(tradeDTO.getTradeId()).equals(id)) {
+            return ResponseEntity.badRequest().body("Trade ID in path must match Trade ID in request body");
         }
+
+        Trade amendedTrade = tradeService.amendTrade(id, tradeDTO);
+        TradeDTO responseDTO = tradeMapper.toDto(amendedTrade);
+        return ResponseEntity.ok(responseDTO);
+
     }
 
     @DeleteMapping("/{id}")
@@ -156,16 +144,13 @@ public class TradeController {
     public ResponseEntity<?> deleteTrade(
             @Parameter(description = "Unique identifier of the trade to delete", required = true) @PathVariable Long id) {
         logger.info("Deleting trade with id: {}", id);
-        try {
-            tradeService.deleteTrade(id);
-            // Fixed: Changed the returned response status from
-            // ResponseEntity.ok().body("Trade cancelled successfully");, to
-            // ResponseEntity.noContent().build();
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            logger.error("Error deleting trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error deleting trade: " + e.getMessage());
-        }
+
+        tradeService.deleteTrade(id);
+        // Fixed: Changed the returned response status from
+        // ResponseEntity.ok().body("Trade cancelled successfully");, to
+        // ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build();
+
     }
 
     @PostMapping("/{id}/terminate")
@@ -181,14 +166,11 @@ public class TradeController {
     public ResponseEntity<?> terminateTrade(
             @Parameter(description = "Unique identifier of the trade to terminate", required = true) @PathVariable Long id) {
         logger.info("Terminating trade with id: {}", id);
-        try {
-            Trade terminatedTrade = tradeService.terminateTrade(id);
-            TradeDTO responseDTO = tradeMapper.toDto(terminatedTrade);
-            return ResponseEntity.ok(responseDTO);
-        } catch (EntityNotFoundException e) {
-            logger.error("Error terminating trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error terminating trade: " + e.getMessage());
-        }
+
+        Trade terminatedTrade = tradeService.terminateTrade(id);
+        TradeDTO responseDTO = tradeMapper.toDto(terminatedTrade);
+        return ResponseEntity.ok(responseDTO);
+
     }
 
     @PostMapping("/{id}/cancel")
@@ -204,14 +186,11 @@ public class TradeController {
     public ResponseEntity<?> cancelTrade(
             @Parameter(description = "Unique identifier of the trade to cancel", required = true) @PathVariable Long id) {
         logger.info("Cancelling trade with id: {}", id);
-        try {
-            Trade cancelledTrade = tradeService.cancelTrade(id);
-            TradeDTO responseDTO = tradeMapper.toDto(cancelledTrade);
-            return ResponseEntity.ok(responseDTO);
-        } catch (Exception e) {
-            logger.error("Error cancelling trade: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error cancelling trade: " + e.getMessage());
-        }
+
+        Trade cancelledTrade = tradeService.cancelTrade(id);
+        TradeDTO responseDTO = tradeMapper.toDto(cancelledTrade);
+        return ResponseEntity.ok(responseDTO);
+
     }
 
 }
