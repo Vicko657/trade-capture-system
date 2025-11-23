@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TradeStatusService {
@@ -24,10 +25,9 @@ public class TradeStatusService {
         return tradeStatusRepository.findAll();
     }
 
-    public TradeStatus findById(Long id) {
+    public Optional<TradeStatus> findById(Long id) {
         logger.debug("Retrieving trade status by id: {}", id);
-        return tradeStatusRepository.findById(id)
-                .orElseThrow(() -> new TradeStatusNotFoundException("tradeStatusId", id));
+        return tradeStatusRepository.findById(id);
     }
 
     public TradeStatus save(TradeStatus tradeStatus) {

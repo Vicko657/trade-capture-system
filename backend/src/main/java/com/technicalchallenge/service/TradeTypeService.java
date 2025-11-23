@@ -1,10 +1,6 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.dto.TradeSubTypeDTO;
-import com.technicalchallenge.dto.TradeTypeDTO;
 import com.technicalchallenge.exceptions.referencedata.TradeTypeNotFoundException;
-import com.technicalchallenge.mapper.TradeSubTypeMapper;
-import com.technicalchallenge.mapper.TradeTypeMapper;
 import com.technicalchallenge.model.TradeSubType;
 import com.technicalchallenge.model.TradeType;
 import com.technicalchallenge.repository.TradeSubTypeRepository;
@@ -19,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * TradeType service class provides business logic and operations relating to
@@ -38,20 +35,12 @@ public class TradeTypeService {
     @Autowired
     private TradeSubTypeRepository tradeSubTypeRepository;
 
-    // TradeType Mapper
-    private final TradeTypeMapper tradeTypeMapper;
-
-    // TradeSubType Mapper
-    private final TradeSubTypeMapper tradeSubTypeMapper;
-
     /**
      * Returns all tradetypes on the system.
      */
-    public List<TradeTypeDTO> findAll() {
+    public List<TradeType> findAll() {
         logger.info("Retrieving all trade types");
-        return tradeTypeRepository.findAll().stream()
-                .map(tradeTypeMapper::toDto)
-                .toList();
+        return tradeTypeRepository.findAll();
     }
 
     /**
@@ -64,26 +53,18 @@ public class TradeTypeService {
      * @param id tradetype's unique identifier
      * @throws TradeTypeNotFoundException if the tradetype is not found
      */
-    public TradeTypeDTO findById(Long id) {
+    public Optional<TradeType> findById(Long id) {
         logger.debug("Retrieving trade type by id: {}", id);
-        TradeType tradeType = findTradeTypeId(id);
-        TradeTypeDTO tradeTypeDTO = tradeTypeMapper.toDto(tradeType);
-        return tradeTypeDTO;
+        return tradeTypeRepository.findById(id);
     }
 
-    public TradeSubTypeDTO getByTradeSubTypeId(Long id) {
+    public Optional<TradeSubType> getByTradeSubTypeId(Long id) {
         logger.debug("Retrieving trade sub type by id: {}", id);
-        TradeSubType tradeSubType = findTradeSubTypeId(id);
-        TradeSubTypeDTO tradeSubTypeDTO = tradeSubTypeMapper.toDto(tradeSubType);
-        return tradeSubTypeDTO;
+        return tradeSubTypeRepository.findById(id);
     }
 
-    public TradeTypeDTO save(TradeTypeDTO tradeTypeDTO) {
-        logger.info("Saving trade type: {}", tradeTypeDTO);
-        var entity = tradeTypeMapper.toEntity(tradeTypeDTO);
-        logger.debug("Saving TradeType Entity: {}", entity);
-        var saved = tradeTypeRepository.save(entity);
-        return tradeTypeMapper.toDto(saved);
+    public TradeType save(TradeType tradeType) {
+        return tradeTypeRepository.save(tradeType);
     }
 
     public void deleteById(Long id) {

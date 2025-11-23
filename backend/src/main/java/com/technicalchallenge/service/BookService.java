@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -30,17 +31,14 @@ public class BookService {
                 .toList();
     }
 
-    public BookDTO getBookById(Long id) {
+    public Optional<BookDTO> getBookById(Long id) {
         logger.debug("Retrieving book by id: {}", id);
-        Book book = findBookId(id);
-        BookDTO bookDTO = bookMapper.toDto(book);
-        return bookDTO;
+        return bookRepository.findById(id).map(bookMapper::toDto);
     }
 
-    public BookDTO getBookByBookName(String bookName) {
+    public Optional<BookDTO> getBookByBookName(String bookName) {
         logger.debug("Retrieving book by id: {}", bookName);
-        Book book = findBookName(bookName);
-        return bookMapper.toDto(book);
+        return bookRepository.findByBookName(bookName).map(bookMapper::toDto);
     }
 
     public void populateReferenceDataByName(Book book, BookDTO dto) {

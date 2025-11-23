@@ -204,7 +204,7 @@ public class ReferenceDataValidator {
         if (tradeStatusId != null) {
             return tradeStatusService.findTradeStatus(tradeStatus);
         } else if (tradeStatus != null) {
-            return tradeStatusService.findById(tradeStatusId);
+            return tradeStatusService.findTradeStatusId(tradeStatusId);
         }
 
         logger.info("TradeStatus validation passed for trade");

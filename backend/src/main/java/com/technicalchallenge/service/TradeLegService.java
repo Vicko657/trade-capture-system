@@ -2,7 +2,6 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.exceptions.referencedata.TradeLegNotFoundException;
 import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.model.HolidayCalendar;
@@ -24,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TradeLegService {
@@ -41,9 +41,9 @@ public class TradeLegService {
         return tradeLegRepository.findAll();
     }
 
-    public TradeLeg getTradeLegById(Long id) {
+    public Optional<TradeLeg> getTradeLegById(Long id) {
         logger.debug("Retrieving trade leg by id: {}", id);
-        return tradeLegRepository.findById(id).orElseThrow(() -> new TradeLegNotFoundException("tradelegId", id));
+        return tradeLegRepository.findById(id);
     }
 
     public TradeLeg saveTradeLeg(TradeLeg tradeLeg, TradeLegDTO dto) {
