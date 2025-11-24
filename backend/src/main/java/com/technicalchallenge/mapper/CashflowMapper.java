@@ -19,7 +19,12 @@ public class CashflowMapper {
         dto.setPaymentValue(entity.getPaymentValue());
         dto.setValueDate(entity.getValueDate());
         dto.setRate(entity.getRate());
+        dto.setCreatedDate(entity.getCreatedDate());
+        dto.setActive(entity.getActive());
 
+        if (entity.getTradeLeg() != null) {
+            dto.setLegId(entity.getTradeLeg().getLegId());
+        }
         if (entity.getPayRec() != null) {
             dto.setPayRec(entity.getPayRec().getPayRec());
         }

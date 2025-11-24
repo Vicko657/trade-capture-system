@@ -10,7 +10,7 @@ INSERT INTO currency (id, currency) VALUES (1000, 'USD'), (1001, 'EUR'), (1002, 
 INSERT INTO leg_type (id, type) VALUES (1000, 'Fixed'), (1001, 'Floating');
 INSERT INTO index_table (id, index) VALUES (1000, 'LIBOR'), (1001, 'EURIBOR');
 INSERT INTO holiday_calendar (id, holiday_calendar) VALUES (1000, 'NY'), (1001, 'LON');
-INSERT INTO schedule (id, schedule) VALUES (1000, 'Monthly'), (1001, 'Quarterly');
+INSERT INTO schedule (id, schedule) VALUES (1000, 'Monthly'), (1001, 'Quarterly'), (1002, 'Semi-annually'), (1003, 'Half-yearly'), (1004, 'Annually'), (1005, 'Yearly');
 INSERT INTO business_day_convention (id, bdc) VALUES (1000, 'Following'), (1001, 'Modified Following');
 INSERT INTO pay_rec (id, pay_rec) VALUES (1000, 'Pay'), (1001, 'Receive');
 
