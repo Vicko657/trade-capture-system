@@ -1,5 +1,6 @@
 package com.technicalchallenge.service;
 
+import com.technicalchallenge.calculations.BigDecimalPercentages;
 import com.technicalchallenge.dto.CashflowDTO;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.TradeLeg;
@@ -31,6 +32,8 @@ public class CashflowService {
     private LegTypeRepository legTypeRepository;
     @Autowired
     private BusinessDayConventionRepository businessDayConventionRepository;
+    @Autowired
+    private BigDecimalPercentages bigDecimalPercentages;
 
     public List<Cashflow> getAllCashflows() {
         logger.info("Retrieving all cashflows");
@@ -80,6 +83,7 @@ public class CashflowService {
         List<LocalDate> paymentDates = calculatePaymentDates(startDate, maturityDate, monthsInterval);
 
         for (LocalDate paymentDate : paymentDates) {
+
             Cashflow cashflow = new Cashflow();
             cashflow.setTradeLeg(leg); // Fixed field name
             cashflow.setValueDate(paymentDate);
@@ -88,16 +92,16 @@ public class CashflowService {
             // Calculate value based on leg type
             BigDecimal cashflowValue = calculateCashflowValue(leg, monthsInterval);
             cashflow.setPaymentValue(cashflowValue);
-
             cashflow.setPayRec(leg.getPayReceiveFlag());
+            cashflow.setPaymentType(leg.getLegRateType());
             cashflow.setPaymentBusinessDayConvention(leg.getPaymentBusinessDayConvention());
             cashflow.setCreatedDate(LocalDateTime.now());
             cashflow.setActive(true);
 
-            cashflowRepository.save(cashflow);
+            Cashflow savedCashflow = cashflowRepository.save(cashflow);
 
             // Fixed: Makes sure the Tradeleg contains the cashflows once they are saved.
-            cashflows.add(cashflow);
+            cashflows.add(savedCashflow);
 
         }
 
@@ -160,13 +164,22 @@ public class CashflowService {
         String legType = leg.getLegRateType().getType();
 
         if ("Fixed".equals(legType)) {
-            double notional = leg.getNotional().doubleValue();
-            double rate = leg.getRate();
-            double months = monthsInterval;
 
-            double result = (notional * rate * months) / 12;
+            // Notional kept as a BigDecimal
+            BigDecimal notional = leg.getNotional();
 
-            return BigDecimal.valueOf(result);
+            // Converts the rate double to BigDecimal decimal
+            Double rate = leg.getRate();
+            BigDecimal rateDecimal = bigDecimalPercentages.percentToDecimal(BigDecimal.valueOf(rate));
+
+            // Converts the month int to BigDecimal
+            BigDecimal months = BigDecimal.valueOf(monthsInterval);
+
+            // Percentage Calculation for a fixed leg
+            BigDecimal result = bigDecimalPercentages.toPercentageOf(notional, rateDecimal, months);
+
+            return result;
+
         } else if ("Floating".equals(legType)) {
             return BigDecimal.ZERO;
         }
