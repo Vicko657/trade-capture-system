@@ -1,13 +1,15 @@
 package com.technicalchallenge.service;
 
-import com.technicalchallenge.exceptions.EntityNotFoundException;
+import com.technicalchallenge.exceptions.referencedata.UserNotFoundException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.repository.ApplicationUserRepository;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.util.Optional;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,13 +51,16 @@ public class UserServiceTest {
 
     @Test
     void testFindApplicationUserByNonExistentId() {
+
         when(applicationUserRepository.findById(99L)).thenReturn(Optional.empty());
 
-        ApplicationUser found = applicationUserService.getUserById(99L);
-        Exception exception = assertThrows(EntityNotFoundException.class, () -> {
-            validateApplicationUser(found);
+        String errorMessage = "User is not found with userId: 99";
+
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            applicationUserService.getUserById(99L);
         });
         assertNotNull(exception);
+        assertEquals(errorMessage, exception.getMessage());
     }
 
     // Business logic: test ApplicationUser cannot be created with null login id
