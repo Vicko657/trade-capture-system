@@ -116,10 +116,7 @@ public class TradeValidator {
         }
 
         // TradeLeg Business rule - Legs must have opposite pay/receive flags
-        if (leg1.getPayRecId() == leg2.getPayRecId()) {
-            errors.add("Legs must have opposite pay/receive flags");
-
-        } else if (leg1.getPayReceiveFlag() == leg2.getPayReceiveFlag()) {
+        if (leg1.getPayReceiveFlag() == leg2.getPayReceiveFlag()) {
             errors.add("Legs must have opposite pay/receive flags");
         }
 

@@ -202,9 +202,10 @@ public class ReferenceDataValidator {
         String tradeStatus = tradeDTO.getTradeStatus();
 
         if (tradeStatusId != null) {
-            return tradeStatusService.findTradeStatus(tradeStatus);
-        } else if (tradeStatus != null) {
             return tradeStatusService.findTradeStatusId(tradeStatusId);
+        } else if (tradeStatus != null) {
+            return tradeStatusService.findTradeStatus(tradeStatus);
+
         }
 
         logger.info("TradeStatus validation passed for trade");
