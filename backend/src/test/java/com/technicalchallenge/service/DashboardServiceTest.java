@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import com.technicalchallenge.calculations.BigDecimalPercentages;
 import com.technicalchallenge.dto.DailySummaryDTO;
 import com.technicalchallenge.dto.TradeSummaryDTO;
 import com.technicalchallenge.dto.DailySummaryDTO.BookActivity;
@@ -35,6 +36,10 @@ import com.technicalchallenge.exceptions.DashboardDataNotFoundException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.Currency;
+import com.technicalchallenge.model.Index;
+import com.technicalchallenge.model.LegType;
+import com.technicalchallenge.model.PayRec;
+import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.model.TradeStatus;
@@ -56,6 +61,9 @@ public class DashboardServiceTest {
 
     @Mock
     private TradeRepository tradeRepository;
+
+    @Mock
+    private BigDecimalPercentages bigDecimalPercentages;
 
     @InjectMocks
     private DashboardViewService dashboardViewService;
@@ -86,11 +94,40 @@ public class DashboardServiceTest {
 
         // Currency Reference
         Currency currency = new Currency();
+        currency.setId(1000L);
         currency.setCurrency("EUR");
 
         // Tradestatus Reference
         TradeStatus status = new TradeStatus();
+        status.setId(1000L);
         status.setTradeStatus("NEW");
+
+        // PayRec Reference
+        PayRec pay = new PayRec();
+        pay.setId(1000L);
+        pay.setPayRec("Pay");
+
+        PayRec rec = new PayRec();
+        rec.setId(1001L);
+        rec.setPayRec("Receive");
+
+        // Index Reference
+        Index index = new Index();
+        index.setId(1000L);
+        index.setIndex("LIBOR");
+
+        // LegType Reference
+        LegType fixed = new LegType();
+        fixed.setId(1000L);
+        fixed.setType("Fixed");
+
+        LegType floating = new LegType();
+        floating.setId(1000L);
+        floating.setType("Floating");
+
+        Schedule schedule = new Schedule();
+        schedule.setId(1000L);
+        schedule.setSchedule("Quarterly");
 
         // Book Reference
         book = new Book();
@@ -99,28 +136,42 @@ public class DashboardServiceTest {
 
         // Trade Leg Reference
         TradeLeg leg1 = new TradeLeg();
-        leg1.setLegId(1L);
-        leg1.setNotional(BigDecimal.valueOf(2000000));
-        leg1.setRate(0.05);
+        leg1.setLegId(1001L);
+        leg1.setNotional(BigDecimal.valueOf(3000000));
+        leg1.setRate(5.0);
+        leg1.setIndex(null);
+        leg1.setPayReceiveFlag(pay);
         leg1.setCurrency(currency);
+        leg1.setLegRateType(fixed);
+        leg1.setCalculationPeriodSchedule(schedule);
 
         TradeLeg leg2 = new TradeLeg();
-        leg2.setLegId(2L);
-        leg2.setNotional(BigDecimal.valueOf(6000000));
-        leg2.setRate(0.0);
+        leg2.setLegId(1002L);
+        leg2.setNotional(BigDecimal.valueOf(2000000));
+        leg2.setPayReceiveFlag(rec);
+        leg2.setIndex(index);
         leg2.setCurrency(currency);
+        leg2.setLegRateType(floating);
+        leg2.setCalculationPeriodSchedule(schedule);
 
         TradeLeg leg3 = new TradeLeg();
-        leg3.setLegId(3L);
-        leg3.setNotional(BigDecimal.valueOf(6000000));
-        leg3.setRate(0.05);
+        leg3.setLegId(1003L);
+        leg3.setNotional(BigDecimal.valueOf(10000000));
+        leg3.setRate(3.5);
+        leg3.setIndex(null);
+        leg3.setPayReceiveFlag(pay);
         leg3.setCurrency(currency);
+        leg3.setLegRateType(fixed);
+        leg3.setCalculationPeriodSchedule(schedule);
 
         TradeLeg leg4 = new TradeLeg();
-        leg4.setLegId(4L);
+        leg4.setLegId(1004L);
         leg4.setNotional(BigDecimal.valueOf(4000000));
-        leg4.setRate(0.0);
+        leg4.setPayReceiveFlag(rec);
+        leg4.setIndex(index);
         leg4.setCurrency(currency);
+        leg4.setLegRateType(floating);
+        leg4.setCalculationPeriodSchedule(schedule);
 
         tradeLegs1 = List.of(leg1, leg2);
         tradeLegs2 = List.of(leg3, leg4);
@@ -335,6 +386,12 @@ public class DashboardServiceTest {
 
         when(tradeRepository.findAllTrades(any())).thenReturn(List.of(trade1, trade2));
 
+        when(bigDecimalPercentages.toPercentageOf(new BigDecimal(
+                14000000),
+                new BigDecimal(
+                        -9000000)))
+                .thenReturn(new BigDecimal("-64.29"));
+
         // When - getDailyTradingStatistics method call including metric and comparison
         // results
         DailySummaryDTO result = dashboardViewService.getDailyTradingStatistics(username);
@@ -344,10 +401,10 @@ public class DashboardServiceTest {
         // Then - Verified results match expected daily trading statistics view
         assertNotNull(result);
         assertTrue(result.getTodaysDate().isEqual(LocalDate.now()));
-        assertEquals(8000000.0, metricsResult.averageNotional());
-        assertEquals(1L, metricsResult.tradeCount());
-        assertEquals(-2000000.0, comparisonResult.difference());
-        assertEquals(-20.0, comparisonResult.percentageChange());
+        assertEquals(new BigDecimal(2500000), metricsResult.averageNotional());
+        assertEquals(2L, metricsResult.tradeCount());
+        assertEquals(new BigDecimal(-9000000), comparisonResult.difference());
+        assertEquals(new BigDecimal("-64.29"), comparisonResult.percentageChange());
 
     }
 

@@ -29,8 +29,9 @@ public class BigDecimalPercentages {
     public BigDecimal toPercentageOf(BigDecimal totalNotional, BigDecimal difference) {
 
         return totalNotional.compareTo(BigDecimal.ZERO) != 0
-                ? difference.divide(totalNotional, 2, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.ZERO)
+                ? difference.divide(totalNotional, 4, RoundingMode.HALF_UP)
+                        .multiply(
+                                ONE_HUNDRED)
                 : BigDecimal.ZERO;
 
     }
