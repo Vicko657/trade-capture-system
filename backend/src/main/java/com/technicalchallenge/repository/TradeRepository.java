@@ -48,7 +48,7 @@ public interface TradeRepository extends JpaRepository<Trade, Long>, JpaSpecific
     // Trade Summary DTO
 
     // Trader's personal trades
-    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$PersonalView(CONCAT(t.traderUser.firstName,' ', t.traderUser.lastName), t.tradeId, t.tradeDate, t.tradeExecutionDate, t.tradeType.tradeType, t.utiCode, t.tradeStatus.tradeStatus, t.book.bookName, t.counterparty.name, t.version) FROM Trade t JOIN t.traderUser u WHERE t.traderUser.loginId = :username AND t.active = true GROUP BY t.traderUser.loginId ORDER BY t.tradeType ASC")
+    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$PersonalView(CONCAT(t.traderUser.firstName,' ', t.traderUser.lastName), t.tradeId, t.tradeDate, t.tradeExecutionDate, t.tradeType.tradeType, t.utiCode, t.tradeStatus.tradeStatus, t.book.bookName, t.counterparty.name, t.version) FROM Trade t JOIN t.traderUser u WHERE t.traderUser.loginId = :username AND t.active = true GROUP BY t.tradeId, t.traderUser.loginId ORDER BY t.tradeType ASC")
     Page<PersonalView> findPersonalTradesView(@Param("username") String username,
             Pageable pageable);
 
@@ -69,7 +69,7 @@ public interface TradeRepository extends JpaRepository<Trade, Long>, JpaSpecific
     List<CounterpartyBreakdown> findByCounterpartyBreakdown(@Param("username") String username);
 
     // Risk Exposure by pay/rec
-    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$RiskExposure(l.legId, l.rate, sd.desk.deskName, l.currency.currency, l.payReceiveFlag.payRec, SUM(CASE WHEN l.payReceiveFlag.payRec = 'Receive' THEN l.notional ELSE -l.notional END)) FROM Trade t JOIN t.book b JOIN b.costCenter cc JOIN cc.subDesk sd JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY l.payReceiveFlag.payRec")
+    @Query("SELECT new com.technicalchallenge.dto.TradeSummaryDTO$RiskExposure(l.legId, l.rate, sd.desk.deskName, l.currency.currency, l.payReceiveFlag.payRec, SUM(CASE WHEN l.payReceiveFlag.payRec = 'Receive' THEN l.notional ELSE -l.notional END)) FROM Trade t JOIN t.book b JOIN b.costCenter cc JOIN cc.subDesk sd JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username GROUP BY l.legId, l.payReceiveFlag.payRec")
     List<RiskExposure> findRiskExposure(@Param("username") String username);
 
     // Daily Summary DTO

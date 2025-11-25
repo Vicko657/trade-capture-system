@@ -207,8 +207,8 @@ public class DashboardViewControllerTest {
                 bookActivity2 = new BookActivity(trade2.getBook().getBookName(), "NY Trading", "FX Options",
                                 BigDecimal.valueOf(6000000), 1);
 
-                comparison = new Comparison(Double.valueOf(-2000000), Double.valueOf(40.0));
-                metrics = new Metrics(2L, Double.valueOf(300000), Double.valueOf(45000000));
+                comparison = new Comparison(BigDecimal.valueOf(-2000000), BigDecimal.valueOf(40.0));
+                metrics = new Metrics(2L, BigDecimal.valueOf(300000), BigDecimal.valueOf(45000000));
 
                 // Mocked User Authentication for Test (Spring Security)
                 ApplicationUserDetails userDetails = new ApplicationUserDetails(tradeUser);

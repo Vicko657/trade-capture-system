@@ -86,15 +86,15 @@ public class DailySummaryDTO {
         @Schema(description = "User Metrics")
         public static record Metrics(
                         Long tradeCount,
-                        Double averageNotional,
-                        Double totalNotional) {
+                        BigDecimal averageNotional,
+                        BigDecimal totalNotional) {
         }
 
         // Flatten Version of comparison
         @Schema(description = "Date comparisons")
         public static record Comparison(
-                        Double difference,
-                        Double percentageChange) {
+                        BigDecimal difference,
+                        BigDecimal percentageChange) {
         }
 
 }
