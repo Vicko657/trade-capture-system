@@ -22,6 +22,7 @@ import com.technicalchallenge.service.TradeSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,11 +57,15 @@ public class TradeSearchController {
         @GetMapping("/search")
         @PreAuthorize("hasAuthority('READ_TRADE')")
         public ResponseEntity<List<TradeDTO>> getAllTradesByCriteria(
-                        @Valid SearchTradeByCriteria searchTradeByCriteria) {
+                        @Valid @RequestBody SearchTradeByCriteria searchTradeByCriteria) {
 
                 List<TradeDTO> trades = tradeSearchService.getAllTradesByCriteria(searchTradeByCriteria).stream()
                                 .map(tradeMapper::toDto)
                                 .toList();
+
+                if (trades.isEmpty()) {
+                        return ResponseEntity.noContent().build();
+                }
 
                 return ResponseEntity.ok(trades);
 
@@ -76,11 +81,16 @@ public class TradeSearchController {
         @GetMapping("/filter")
         @PreAuthorize("hasAuthority('READ_TRADE')")
         public ResponseEntity<Page<TradeDTO>> getAllTrades(
-                        @Valid @RequestParam SearchTradeByCriteria searchTradeByCriteria,
+                        @Valid @RequestBody SearchTradeByCriteria searchTradeByCriteria,
                         PaginationDTO pagination, SortDTO sort) {
 
                 Page<TradeDTO> trades = tradeSearchService.getAllTrades(searchTradeByCriteria, pagination, sort)
                                 .map(tradeMapper::toDto);
+
+                if (trades.isEmpty()) {
+                        return ResponseEntity.noContent().build();
+                }
+
                 return ResponseEntity.ok(trades);
         }
 
@@ -99,6 +109,11 @@ public class TradeSearchController {
                 List<TradeDTO> trades = tradeSearchService.getAllTradesByRSQL(query).stream()
                                 .map(tradeMapper::toDto)
                                 .toList();
+
+                if (trades.isEmpty()) {
+                        return ResponseEntity.noContent().build();
+                }
+
                 return ResponseEntity.ok(trades);
 
         }
