@@ -50,33 +50,27 @@ public class TradeDTO {
     private LocalDateTime deactivatedDate;
 
     // Book reference
-    @NotNull(message = "Book id is required")
     private Long bookId;
     @NotNull(message = "Book name is required")
     private String bookName;
 
     // Counterparty reference
-    @NotNull(message = "Counterparty id is required")
     private Long counterpartyId;
     @NotNull(message = "Counterparty name is required")
     private String counterpartyName;
 
     // User references
-    @NotNull(message = "TraderUser id is required")
     private Long traderUserId;
     @NotNull(message = "TraderUser name is required")
     private String traderUserName;
-    @NotNull(message = "InputterUser id is required")
     private Long tradeInputterUserId;
     @NotNull(message = "InputterUser name is required")
     private String inputterUserName;
 
     // Trade type references
-    @NotNull(message = "Tradetype id is required")
     private Long tradeTypeId;
     @NotNull(message = "Tradetype is required")
     private String tradeType;
-    @NotNull(message = "TradeSubtype id is required")
     private Long tradeSubTypeId;
     @NotNull(message = "TradeSubtype is required")
     private String tradeSubType;
