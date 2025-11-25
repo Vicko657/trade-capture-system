@@ -1,8 +1,8 @@
 package com.technicalchallenge.service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDate;
-import java.util.DoubleSummaryStatistics;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.technicalchallenge.calculations.BigDecimalPercentages;
+import com.technicalchallenge.calculations.BigDecimalSummaryStatistics;
 import com.technicalchallenge.dto.DailySummaryDTO;
 import com.technicalchallenge.dto.TradeSummaryDTO;
 import com.technicalchallenge.dto.DailySummaryDTO.Comparison;
@@ -41,8 +43,12 @@ public class DashboardViewService {
 
         private final TradeRepository tradeRepository;
 
-        public DashboardViewService(TradeRepository tradeRepository) {
+        private final BigDecimalPercentages bigDecimalPercentages;
+
+        public DashboardViewService(TradeRepository tradeRepository,
+                        BigDecimalPercentages bigDecimalPercentages) {
                 this.tradeRepository = tradeRepository;
+                this.bigDecimalPercentages = bigDecimalPercentages;
         }
 
         /**
@@ -204,21 +210,20 @@ public class DashboardViewService {
                 // Daily trade count, total of notionals and user-specific performance metrics
 
                 // Today's Summarised User's Trades
-                DoubleSummaryStatistics todaysMetrics = todaysTrades.stream().collect(Collectors.summarizingDouble(
-                                trade -> trade.getTradeLegs().stream().map(TradeLeg::getNotional)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                                .doubleValue()));
+                BigDecimalSummaryStatistics todaysMetrics = todaysTrades.stream()
+                                .flatMap(trade -> trade.getTradeLegs().stream()).map(TradeLeg::getNotional)
+                                .collect(BigDecimalSummaryStatistics.statistics());
 
                 // Yesterday's Summarised User's Trades
-                DoubleSummaryStatistics yesterdaysMetrics = yesterdaysTrades.stream()
-                                .collect(Collectors.summarizingDouble(
-                                                trade -> trade.getTradeLegs().stream().map(TradeLeg::getNotional)
-                                                                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                                                .doubleValue()));
+                BigDecimalSummaryStatistics yesterdaysMetrics = yesterdaysTrades.stream()
+                                .flatMap(trade -> trade.getTradeLegs().stream()).map(TradeLeg::getNotional)
+                                .collect(BigDecimalSummaryStatistics.statistics());
 
-                Metrics todaysStats = new Metrics(todaysMetrics.getCount(), todaysMetrics.getAverage(),
+                Metrics todaysStats = new Metrics(todaysMetrics.getCount(),
+                                todaysMetrics.getAverage(MathContext.DECIMAL64),
                                 todaysMetrics.getSum());
-                Metrics yesterdaysStats = new Metrics(yesterdaysMetrics.getCount(), yesterdaysMetrics.getAverage(),
+                Metrics yesterdaysStats = new Metrics(yesterdaysMetrics.getCount(), yesterdaysMetrics.getAverage(
+                                MathContext.DECIMAL64),
                                 yesterdaysMetrics.getSum());
 
                 Map<String, DailySummaryDTO.Metrics> metrics = new HashMap<>();
@@ -227,11 +232,10 @@ public class DashboardViewService {
 
                 // Comparison to previous trading days - difference in notioanls & percentage
                 // change
-                Double difference = todaysStats.totalNotional() - yesterdaysStats.totalNotional();
+                BigDecimal difference = todaysStats.totalNotional().subtract(yesterdaysStats.totalNotional());
 
-                Double percentageChange = yesterdaysStats.totalNotional() != 0
-                                ? (difference / yesterdaysStats.totalNotional()) * 100
-                                : 0.0;
+                BigDecimal percentageChange = bigDecimalPercentages.toPercentageOf(yesterdaysStats.totalNotional(),
+                                difference);
 
                 Comparison comparison = new Comparison(difference, percentageChange);
                 Map<String, DailySummaryDTO.Comparison> comparisonOfMetrics = new HashMap<>();
