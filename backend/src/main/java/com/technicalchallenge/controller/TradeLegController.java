@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,7 @@ public class TradeLegController {
     private TradeLegMapper tradeLegMapper;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('READ_TRADE')")
     public List<TradeLegDTO> getAllTradeLegs() {
         logger.info("Fetching all trade legs");
         return tradeLegService.getAllTradeLegs().stream()
@@ -39,6 +41,7 @@ public class TradeLegController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('READ_TRADE')")
     public ResponseEntity<TradeLegDTO> getTradeLegById(@PathVariable(name = "id") Long id) {
         logger.debug("Fetching trade leg by id: {}", id);
         return tradeLegService.getTradeLegById(id)
@@ -48,6 +51,7 @@ public class TradeLegController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CREATE_TRADE')")
     public ResponseEntity<?> createTradeLeg(@Valid @RequestBody TradeLegDTO tradeLegDTO) {
         logger.info("Creating new trade leg: {}", tradeLegDTO);
         var entity = tradeLegMapper.toEntity(tradeLegDTO);
@@ -56,6 +60,7 @@ public class TradeLegController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('TERMINATE_TRADE')")
     public ResponseEntity<Void> deleteTradeLeg(@PathVariable(name = "id") Long id) {
         logger.warn("Deleting trade leg with id: {}", id);
         tradeLegService.deleteTradeLeg(id);
