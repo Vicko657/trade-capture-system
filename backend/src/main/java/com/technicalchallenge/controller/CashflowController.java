@@ -5,6 +5,7 @@ import com.technicalchallenge.dto.CashflowGenerationRequest;
 import com.technicalchallenge.mapper.CashflowMapper;
 import com.technicalchallenge.service.CashflowService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -88,7 +89,7 @@ public class CashflowController {
         var entity = cashflowMapper.toEntity(cashflowDTO);
         cashflowService.populateReferenceDataByName(entity, cashflowDTO);
         var saved = cashflowService.saveCashflow(entity);
-        return ResponseEntity.ok(cashflowMapper.toDto(saved));
+        return ResponseEntity.status(HttpStatus.CREATED).body(cashflowMapper.toDto(saved));
     }
 
     @DeleteMapping("/{id}")
