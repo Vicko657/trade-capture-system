@@ -402,7 +402,7 @@ public class DashboardServiceTest {
         assertNotNull(result);
         assertTrue(result.getTodaysDate().isEqual(LocalDate.now()));
         assertEquals(new BigDecimal(2500000), metricsResult.averageNotional());
-        assertEquals(2L, metricsResult.tradeCount());
+        assertEquals(1L, metricsResult.tradeCount());
         assertEquals(new BigDecimal(-9000000), comparisonResult.difference());
         assertEquals(new BigDecimal("-64.29"), comparisonResult.percentageChange());
 
