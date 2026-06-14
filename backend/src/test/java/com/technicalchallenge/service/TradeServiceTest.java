@@ -1,29 +1,31 @@
 package com.technicalchallenge.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.exceptions.ValidationException;
+import com.technicalchallenge.exceptions.referencedata.TradeNotFoundException;
+import com.technicalchallenge.mapper.TradeLegMapper;
+import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
+import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.Counterparty;
+import com.technicalchallenge.model.Currency;
+import com.technicalchallenge.model.HolidayCalendar;
+import com.technicalchallenge.model.LegType;
+import com.technicalchallenge.model.PayRec;
 import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.model.TradeStatus;
-import com.technicalchallenge.repository.ApplicationUserRepository;
-import com.technicalchallenge.repository.BookRepository;
-import com.technicalchallenge.repository.BusinessDayConventionRepository;
-import com.technicalchallenge.repository.CashflowRepository;
-import com.technicalchallenge.repository.CounterpartyRepository;
-import com.technicalchallenge.repository.CurrencyRepository;
-import com.technicalchallenge.repository.HolidayCalendarRepository;
-import com.technicalchallenge.repository.LegTypeRepository;
-import com.technicalchallenge.repository.PayRecRepository;
-import com.technicalchallenge.repository.ScheduleRepository;
-import com.technicalchallenge.repository.TradeLegRepository;
+import com.technicalchallenge.model.TradeSubType;
+import com.technicalchallenge.model.TradeType;
 import com.technicalchallenge.repository.TradeRepository;
 import com.technicalchallenge.repository.TradeStatusRepository;
+import com.technicalchallenge.validation.ReferenceDataValidator;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
 
@@ -33,12 +35,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,49 +55,31 @@ class TradeServiceTest {
     private TradeRepository tradeRepository;
 
     @Mock
-    private TradeLegRepository tradeLegRepository;
+    private TradeLegService tradeLegService;
 
     @Mock
-    private CashflowRepository cashflowRepository;
-
-    @Mock
-    private ScheduleRepository scheduleRepository;
+    private CashflowService cashflowService;
 
     @Mock
     private TradeStatusRepository tradeStatusRepository;
 
     @Mock
-    private LegTypeRepository legTypeRepository;
-
-    @Mock
-    private PayRecRepository payRecRepository;
-
-    @Mock
-    private BusinessDayConventionRepository businessDayConventionRepository;
-
-    @Mock
-    private HolidayCalendarRepository HolidayCalendarRepository;
-
-    @Mock
-    private CurrencyRepository currencyRepository;
-
-    @Mock
-    private AdditionalInfoService additionalInfoService;
-
-    @Mock
-    private BookRepository bookRepository;
-
-    @Mock
-    private CounterpartyRepository counterpartyRepository;
-
-    @Mock
-    private ApplicationUserRepository applicationUserRepository;
-
-    @Mock
-    private BookService bookService;
+    private AuthorizationService authorizationService;
 
     @Mock
     private TradeValidator tradeValidator;
+
+    @Mock
+    private ReferenceDataValidator referenceDataValidator;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private TradeMapper tradeMapper;
+
+    @Mock
+    private TradeLegMapper tradeLegMapper;
 
     @InjectMocks
     private TradeService tradeService;
@@ -105,64 +89,131 @@ class TradeServiceTest {
     private Book book;
     private Counterparty counterparty;
     private TradeStatus tradeStatus;
-    private TradeLeg tradeLeg;
-    private TradeLeg tradeleg1;
-    private TradeLeg tradeleg2;
-    private TradeLegDTO leg1;
-    private TradeLegDTO leg2;
-    private List<Cashflow> cashflowList1;
-    private List<Cashflow> cashflowList2;
-    private Cashflow cashflow1;
-    private Cashflow cashflow2;
+    private TradeLeg tradeLeg1, tradeLeg2;
+    private TradeLegDTO leg1, leg2;
+    private List<Cashflow> cashflowList1, cashflowList2;
+    private Cashflow cashflow1, cashflow2;
     private Schedule schedule;
-    private ApplicationUser tradeUser1;
-    private ApplicationUser tradeUser2;
+    private ApplicationUser traderUser, inputterUser;
+    private TradeType tradeType;
+    private TradeSubType tradeSubType;
+    private Currency currency;
+    private LegType legType;
+    private HolidayCalendar holidayCalendar;
+    private PayRec payRec;
+    private BusinessDayConvention paymentBusinessDayConvention;
+    private BusinessDayConvention fixingBusinessDayConvention;
+
+    private ValidationResult inValidResult, validResult;
+    private List<String> errors;
 
     @BeforeEach
     void setUp() {
         // Set up test data
+        tradeMapper = new TradeMapper(tradeLegMapper);
+        objectMapper.registerModule(new JavaTimeModule());
+
+        tradeService = new TradeService(tradeRepository, tradeLegService, cashflowService, tradeStatusRepository,
+                tradeValidator, referenceDataValidator, authorizationService, tradeMapper);
 
         // TraderUser Reference
-        tradeUser1 = new ApplicationUser();
-        tradeUser1.setActive(true);
-        tradeUser1.setId(1L);
-        tradeUser1.setFirstName("John");
-        tradeUser1.setLastName("Smith");
+        traderUser = new ApplicationUser();
+        traderUser.setId(1L);
+        traderUser.setActive(true);
+        traderUser.setFirstName("John");
+        traderUser.setLastName("Smith");
 
-        tradeUser2 = new ApplicationUser();
-        tradeUser2.setId(3L);
-        tradeUser2.setFirstName("Jess");
-        tradeUser2.setLastName("Abraham");
+        // TraderUser Reference
+        inputterUser = new ApplicationUser();
+        inputterUser.setId(3L);
+        inputterUser.setActive(true);
+        inputterUser.setFirstName("Jess");
+        inputterUser.setLastName("Abraham");
 
         // Book Reference
         book = new Book();
         book.setActive(true);
         book.setId(5L);
-        book.setBookName("TestBookC");
+        book.setBookName("FX-BOOK-1");
 
         // Counterparty Reference
         counterparty = new Counterparty();
         counterparty.setActive(true);
         counterparty.setId(7L);
-        counterparty.setName("TestCounterpartyC");
+        counterparty.setName("BigBank");
 
         // Trade Status Reference
         tradeStatus = new TradeStatus();
         tradeStatus.setId(9L);
         tradeStatus.setTradeStatus("NEW");
 
+        // Trade Status Reference
+        tradeType = new TradeType();
+        tradeType.setId(1L);
+        tradeType.setTradeType("Swap");
+
+        // Trade Status Reference
+        tradeSubType = new TradeSubType();
+        tradeSubType.setId(1L);
+        tradeSubType.setTradeSubType("IR Swap");
+
         // Schedule Reference
         schedule = new Schedule();
         schedule.setId(1L);
         schedule.setSchedule("1M");
 
-        // Trade Leg Reference
-        tradeLeg = new TradeLeg();
-        tradeLeg.setLegId(5L);
-        tradeLeg.setNotional(BigDecimal.valueOf(1000000));
-        tradeLeg.setRate(0.05);
-        tradeLeg.setCalculationPeriodSchedule(schedule);
+        currency = new Currency();
+        currency.setId(1L);
+        currency.setCurrency("USD");
 
+        legType = new LegType();
+        legType.setId(1L);
+        legType.setType("Fixed");
+
+        paymentBusinessDayConvention = new BusinessDayConvention();
+        paymentBusinessDayConvention.setId(1L);
+        paymentBusinessDayConvention.setBdc("Following");
+
+        fixingBusinessDayConvention = new BusinessDayConvention();
+        fixingBusinessDayConvention.setId(2L);
+        fixingBusinessDayConvention.setBdc("Following");
+
+        schedule = new Schedule();
+        schedule.setId(1L);
+        schedule.setSchedule("Quarterly");
+
+        holidayCalendar = new HolidayCalendar();
+        holidayCalendar.setId(1L);
+        holidayCalendar.setHolidayCalendar("NY");
+
+        currency = new Currency();
+        currency.setId(1L);
+        currency.setCurrency("USD");
+
+        // TradeDTO - DTO
+        tradeDTO = new TradeDTO();
+        tradeDTO.setTradeId(100001L);
+        tradeDTO.setVersion(1);
+        tradeDTO.setActive(true);
+        tradeDTO.setTradeDate(LocalDate.of(2025, 1, 15));
+        tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
+        tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
+        tradeDTO.setTradeStatusId(tradeStatus.getId());
+        tradeDTO.setCounterpartyId(counterparty.getId());
+        tradeDTO.setBookId(book.getId());
+
+        // Trade - Entity
+        trade = new Trade();
+        trade.setId(1L);
+        trade.setTradeId(100001L);
+        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
+        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
+        trade.setBook(book);
+        trade.setCounterparty(counterparty);
+        trade.setTradeStatus(tradeStatus);
+        trade.setVersion(1);
+
+        // Trade Leg Reference
         leg1 = new TradeLegDTO();
         leg1.setLegId(3L);
         leg1.setNotional(BigDecimal.valueOf(1000000));
@@ -195,73 +246,84 @@ class TradeServiceTest {
         leg2.setFixingBdcId(4L);
         leg2.setFixingBusinessDayConvention("Following");
 
-        tradeleg1 = new TradeLeg();
-        tradeleg1.setLegId(1L);
-        tradeleg1.setNotional(BigDecimal.valueOf(1000000));
-        tradeleg1.setRate(0.05);
-        tradeleg1.setCalculationPeriodSchedule(schedule);
+        tradeLeg1 = new TradeLeg();
+        tradeLeg1.setLegId(1L);
+        tradeLeg1.setNotional(BigDecimal.valueOf(1000000));
+        tradeLeg1.setRate(0.05);
+        tradeLeg1.setCalculationPeriodSchedule(schedule);
 
-        tradeleg2 = new TradeLeg();
-        tradeleg2.setLegId(2L);
-        tradeleg2.setNotional(BigDecimal.valueOf(1000000));
-        tradeleg2.setRate(0.05);
-        tradeleg2.setCalculationPeriodSchedule(schedule);
+        tradeLeg2 = new TradeLeg();
+        tradeLeg2.setLegId(2L);
+        tradeLeg2.setNotional(BigDecimal.valueOf(1000000));
+        tradeLeg2.setRate(0.05);
+        tradeLeg2.setCalculationPeriodSchedule(schedule);
+
+        // Assigned TradeLegs
+        trade.setTradeLegs(List.of(tradeLeg1, tradeLeg2));
+        tradeDTO.setTradeLegs(List.of(leg1, leg2));
 
         // Cashflow Reference
-
-        // Cashflow List
         cashflowList1 = new ArrayList<Cashflow>();
         cashflowList2 = new ArrayList<Cashflow>();
-
-        // Cashflow Entity
         cashflow1 = new Cashflow();
         cashflow2 = new Cashflow();
+        cashflow1.setTradeLeg(tradeLeg1);
+        cashflow2.setTradeLeg(tradeLeg2);
 
-        cashflow1.setTradeLeg(tradeleg1);
-        cashflow2.setTradeLeg(tradeleg2);
+        // Assigned Cashflows
+        tradeLeg1.setCashflows(cashflowList1);
+        tradeLeg2.setCashflows(cashflowList2);
 
-        // Assigned TradeLegs and Cashflows
-        tradeleg1.setCashflows(cashflowList1);
-        tradeleg2.setCashflows(cashflowList2);
-
-        // TradeDTO - DTO
-        tradeDTO = new TradeDTO();
-        tradeDTO.setTradeId(100001L);
-        tradeDTO.setVersion(1);
-        tradeDTO.setActive(true);
-        tradeDTO.setTradeDate(LocalDate.of(2025, 1, 15));
-        tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 17));
-        tradeDTO.setTradeMaturityDate(LocalDate.of(2026, 1, 17));
-        tradeDTO.setTradeStatusId(tradeStatus.getId());
-        tradeDTO.setTradeStatus(tradeStatus.getTradeStatus());
-        tradeDTO.setCounterpartyId(counterparty.getId());
-        tradeDTO.setCounterpartyName(counterparty.getName());
-        tradeDTO.setBookId(book.getId());
-        tradeDTO.setBookName(book.getBookName());
-
-        // Trade - Entity
-        trade = new Trade();
-        trade.setId(1L);
-        trade.setTradeId(100001L);
-        trade.setTradeStartDate(tradeDTO.getTradeStartDate());
-        trade.setTradeMaturityDate(tradeDTO.getTradeMaturityDate());
-        trade.setBook(book);
-        trade.setCounterparty(counterparty);
-        trade.setTradeStatus(tradeStatus);
-        trade.setVersion(1);
-
-        trade.setTradeLegs(List.of(tradeleg2, tradeleg2));
-        tradeDTO.setTradeLegs(List.of(leg1, leg2));
+        // Trade Business Validation
+        errors = new ArrayList<>();
+        inValidResult = ValidationResult.isNotValid(errors);
+        validResult = ValidationResult.isValid();
 
     }
 
-    // ! WILL IMPLEMENT ! for most tests to clean up and reduce amount of code !
-    private void missingMockedStubs() {
-        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
-        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
-        when(tradeStatusRepository.findByTradeStatus("NEW"))
-                .thenReturn(Optional.of(tradeStatus));
+    private void populateReferenceData(Trade trade, TradeDTO tradeDTO) {
+        when(referenceDataValidator.validateBookReference(tradeDTO)).thenReturn(book);
+        when(referenceDataValidator.validateCounterpartyReference(tradeDTO)).thenReturn(counterparty);
+        when(referenceDataValidator.validateTraderUserReference(tradeDTO)).thenReturn(traderUser);
+        when(referenceDataValidator.validateInputterUserReference(tradeDTO)).thenReturn(inputterUser);
+        when(referenceDataValidator.validateTradeStatusReference(tradeDTO)).thenReturn(tradeStatus);
+        when(referenceDataValidator.validateTradeTypeReference(tradeDTO)).thenReturn(tradeType);
+        when(referenceDataValidator.validateTradeSubTypeReference(tradeDTO)).thenReturn(tradeSubType);
+        tradeService.populateReferenceDataByName(trade, tradeDTO);
+    }
 
+    private void tradeStatus(String status, Trade trade) {
+        TradeStatus tradeStatus = new TradeStatus();
+        tradeStatus.setTradeStatus(status);
+        when(tradeStatusRepository.findByTradeStatus(status))
+                .thenReturn(Optional.of(tradeStatus));
+        trade.setTradeStatus(tradeStatus);
+    }
+
+    private void findByTradeId(Long tradeId, Trade trade) {
+        when(tradeRepository.findByTradeIdAndActiveTrue(tradeId)).thenReturn(Optional.of(trade));
+    }
+
+    @Test
+    void testGetAllTrades_Success() {
+
+        // Given
+        List<Trade> trades = new ArrayList<>();
+        for (Long x = 0L; x < 2060L; x++) {
+            Trade trade = new Trade();
+            trade.setId(x);
+            trades.add(trade);
+        }
+
+        when(tradeRepository.findAll()).thenReturn(trades);
+
+        // When
+        List<Trade> result = tradeService.getAllTrades();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2060L, result.size());
+        verify(tradeRepository).findAll();
     }
 
     /**
@@ -270,72 +332,52 @@ class TradeServiceTest {
     @Test
     void testCreateTrade_Success() {
 
-        // Given - Set the new tradeDTO, new trade and data in the setUp() method
-        // tradeStatus.setTradeStatus("NEW");
-        // Problem: RuntimeException error was thrown, "Book not found or not set"
-        // Fixed: Added stubbing statements to populate reference data and validate the
-        // data
-        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
-        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
-        when(tradeStatusRepository.findByTradeStatus("NEW"))
-                .thenReturn(Optional.of(tradeStatus));
-
-        // Mocked saving a new trade
-        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
-
-        // Problem: NullPointerException was thrown, get.tradeLegid() was null
-        // Fixed: Mocked saving a new trade leg entity
-        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeLeg);
-
-        // When - Checks that the trade has been created
-        tradeService.populateReferenceDataByName(trade, tradeDTO);
-        Trade result = tradeService.createTrade(tradeDTO);
-
-        // Then - Verifies that the results are not null and the trade has been saved
-        assertNotNull(result);
-        assertEquals(100001L, result.getTradeId());
-        assertEquals("TestBookC", result.getBook().getBookName());
-        assertEquals(LocalDate.of(2025, 1, 17), result.getTradeStartDate());
-        verify(tradeRepository).save(any(Trade.class));
-    }
-
-    /**
-     * Tests if Invalid Dates fail when a trade is created
-     */
-    @Test
-    void testCreateTrade_InvalidDates_ShouldFail() {
-        // Given - The Trade Start Date 10/1/2025 is before the Trade Date 15/1/2025
-        // which is invalid
-        tradeDTO.setTradeStartDate(LocalDate.of(2025, 1, 10)); // Before trade date
-
-        // When & Then
-        // A runtime exception is thrown and assertThrows returns the
-        // exception
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            tradeService.createTrade(tradeDTO);
-        });
-
-        // Problem: This assertion is intentionally wrong - candidates need to fix it
-        // Fixed: Changed "Wrong error message" to "Start date cannot be before trade
-        // date" which matches the error message in validateTradeCreation() method
-        assertEquals("Start date cannot be before trade date", exception.getMessage());
-    }
-
-    @Test
-    void testCreateTrade_InvalidLegCount_ShouldFail() {
         // Given
-        tradeDTO.setTradeLegs(Arrays.asList(new TradeLegDTO())); // Only 1 leg
+        TradeDTO tradeDTO1 = new TradeDTO();
+        tradeDTO1.setId(1000L);
+        tradeDTO1.setTradeDate(LocalDate.of(2026, 9, 15));
+        tradeDTO1.setTradeStartDate(LocalDate.of(2026, 9, 17));
+        tradeDTO1.setTradeMaturityDate(LocalDate.of(2026, 9, 17));
+        tradeDTO1.setTradeExecutionDate(LocalDate.of(2026, 9, 17));
+        tradeDTO1.setCounterpartyId(counterparty.getId());
+        tradeDTO1.setBookId(book.getId());
+        tradeDTO1.setTradeType("Swap");
+        tradeDTO1.setTradeSubType("IR Swap");
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            tradeService.createTrade(tradeDTO);
-        });
+        when(tradeValidator.validateTradeBusinessRules(tradeDTO1)).thenReturn(validResult);
 
-        assertTrue(exception.getMessage().contains("exactly 2 legs"));
+        tradeDTO1.setTradeId(10003L);
+
+        Trade newTrade = tradeMapper.toEntity(tradeDTO1);
+        newTrade.setVersion(1);
+        newTrade.setActive(true);
+        newTrade.setCreatedDate(LocalDateTime.now());
+        newTrade.setLastTouchTimestamp(LocalDateTime.now());
+
+        populateReferenceData(newTrade, tradeDTO1);
+
+        when(tradeRepository.save(any(Trade.class))).thenReturn(newTrade);
+
+        when(tradeLegService.createTradeLegs(tradeDTO1, newTrade)).thenReturn(List.of(tradeLeg1, tradeLeg2));
+        when(cashflowService.generateCashflows(tradeLeg1, tradeDTO1.getTradeStartDate(),
+                tradeDTO1.getTradeMaturityDate())).thenReturn(List.of(cashflow1, cashflow2));
+        newTrade.setTradeLegs(List.of(tradeLeg1, tradeLeg2));
+        tradeDTO1.setTradeLegs(List.of(leg1, leg2));
+
+        // When
+        Trade result = tradeService.createTrade(tradeDTO1);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(10003L, result.getTradeId());
+        assertEquals("FX-BOOK-1", result.getBook().getBookName());
+        assertEquals(LocalDate.of(2026, 9, 17), result.getTradeStartDate());
+        verify(tradeRepository).save(any(Trade.class));
     }
 
     @Test
     void testGetTradeById_Found() {
+
         // Given
         when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
 
@@ -349,14 +391,17 @@ class TradeServiceTest {
 
     @Test
     void testGetTradeById_NotFound() {
+
         // Given
         when(tradeRepository.findByTradeIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         // When
-        Trade result = tradeService.getTradeById(999L);
-
+        TradeNotFoundException exception = assertThrows(TradeNotFoundException.class, () -> {
+            tradeService.getTradeById(999L);
+        });
         // Then
-        assertNotNull(result);
+        assertTrue(exception.getMessage().contains("Trade is not found with tradeId: 999"));
+
     }
 
     /**
@@ -364,49 +409,39 @@ class TradeServiceTest {
      */
     @Test
     void testAmendTrade_Success() {
-        // Given - Finds existing trade id
-        // Finds and disables existing trade with 100001L
-        when(tradeRepository.findByTradeIdAndActiveTrue(100001L)).thenReturn(Optional.of(trade));
+
+        // Given
+        trade.setTradeMaturityDate(LocalDate.of(2026, 5, 30));
+        tradeDTO.setTradeMaturityDate(trade.getTradeMaturityDate());
+        findByTradeId(100001L, trade);
         trade.setActive(false);
         trade.setDeactivatedDate(LocalDateTime.now());
 
-        // New trade is created with the same Id as the existing trade
-        Trade amendedTrade = new Trade();
+        Trade amendedTrade = tradeMapper.toEntity(tradeDTO);
         amendedTrade.setTradeId(100001L);
-        // Problem: NullPointerException was thrown, trade.getVersion() was null
-        // Fixed: Set existing trade version to 1 and set the amended trade version to
         amendedTrade.setVersion(trade.getVersion() + 1);
+        amendedTrade.setActive(true);
+        amendedTrade.setCreatedDate(LocalDateTime.now());
+        amendedTrade.setLastTouchTimestamp(LocalDateTime.now());
 
-        // Creates a new trade status and sets to amended trade
-        TradeStatus amendedStatus = new TradeStatus();
-        amendedStatus.setTradeStatus("AMENDED");
-        amendedTrade.setTradeStatus(amendedStatus);
-        tradeDTO.setTradeStatus(amendedStatus.getTradeStatus());
-        when(tradeStatusRepository.findByTradeStatus("AMENDED"))
-                .thenReturn(Optional.of(amendedStatus));
+        populateReferenceData(amendedTrade, tradeDTO);
+        tradeStatus("AMENDED", amendedTrade);
 
-        // Changed the trades maturity date to check if the trade has been amended
-        amendedTrade.setTradeMaturityDate(LocalDate.of(2026, 5, 30));
-        tradeDTO.setTradeMaturityDate(amendedTrade.getTradeMaturityDate());
-
-        // Mocked saving a new and old trade
         when(tradeRepository.save(any(Trade.class))).thenReturn(amendedTrade);
-
-        // Problem: NullPointerException was thrown, get.tradeLegid() was null
-        // Fixed: Mocked saving a new trade leg entity
-        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeLeg);
+        when(tradeLegService.createTradeLegs(tradeDTO, amendedTrade)).thenReturn(List.of(tradeLeg1, tradeLeg2));
 
         // When - Checks if the trade has been amended
         Trade result = tradeService.amendTrade(100001L, tradeDTO);
 
         // Then - Verifies the trade has been amended
-        assertNotNull(result); // Amended trade is not null
-        assertEquals(false, trade.getActive()); // Trade is not active
-        assertEquals(100001L, result.getTradeId()); // Amended trade has the same Id as the existing trade Id
-        assertEquals(LocalDate.of(2026, 5, 30), result.getTradeMaturityDate()); // The maturity date has changed
-        assertEquals(2, result.getVersion()); // Amended trade version is now 2
-        assertEquals(true, result.getActive()); // Amended trade is active
-        verify(tradeRepository, times(2)).save(any(Trade.class)); // Save old and new
+        assertNotNull(result);
+        assertEquals(false, trade.getActive());
+        assertEquals(100001L, result.getTradeId());
+        assertEquals(LocalDate.of(2026, 5, 30), result.getTradeMaturityDate());
+        assertEquals(2, result.getVersion());
+        assertEquals(true, result.getActive());
+        assertEquals("AMENDED", result.getTradeStatus().getTradeStatus());
+        verify(tradeRepository, times(2)).save(any(Trade.class));
     }
 
     @Test
@@ -419,48 +454,7 @@ class TradeServiceTest {
             tradeService.amendTrade(999L, tradeDTO);
         });
 
-        assertTrue(exception.getMessage().contains("Trade not found"));
-    }
-
-    /**
-     * Tests the Cashflow Generation Monthly Schedule
-     */
-    @Test
-    void testCashflowGeneration_MonthlySchedule() {
-
-        // Given - Setup the two entities for the tradeLegs and assigned seperate
-        // cashflow and cashflow lists in the setUp(). Added the schedule repository to
-        // define the months interval.
-
-        // Mocked populating the book, counterparty and tradeStatus
-        when(bookRepository.findByBookName("TestBookC")).thenReturn(Optional.of(book));
-        when(counterpartyRepository.findByName("TestCounterpartyC")).thenReturn(Optional.of(counterparty));
-        when(tradeStatusRepository.findByTradeStatus("NEW"))
-                .thenReturn(Optional.of(tradeStatus));
-
-        // Mocked saving a new trade
-        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
-
-        // Mocked saving the two different tradeLegs
-        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeleg1, tradeleg2);
-
-        // Mocked saving any cashflows and cashflow lists recieved
-        when(cashflowRepository.save(any(Cashflow.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // When - Checks if the trade has been created with the trade legs. The Trade
-        // leg model has been modified to create new ArrayList<Cashflow>(); and
-        // leg.getCashflows().add(cashflow); has been added to the for loop in the
-        // generateCashflows() method in the TradeService.class
-        Trade result = tradeService.createTrade(tradeDTO);
-
-        // Then - Assertions were replaced to verify the CashflowGeneration is working.
-        assertNotNull(result);// The trade is not null
-        assertEquals(2, result.getTradeLegs().size()); // Trade has two trade legs
-        assertEquals(12, tradeleg1.getCashflows().size()); // tradeleg1 has 12 cashflows
-        assertEquals(12, tradeleg2.getCashflows().size()); // tradeleg2 has 12 cashflows
-        verify(cashflowRepository, times(24)).save(any(Cashflow.class)); // The Cashflow Repository iterates 24 times.
-                                                                         // 12 cashflows for each tradeleg.
-
+        assertTrue(exception.getMessage().contains("Trade is not found with tradeId: 999"));
     }
 
     /**
@@ -471,25 +465,17 @@ class TradeServiceTest {
 
         // Given - Validation Result & mocked both validation methods, saving a
         // trade and tradelegs
-        missingMockedStubs();
-
-        ValidationResult validResult = ValidationResult.isValid();
-
         when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(validResult);
-        when(tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs())).thenReturn(validResult);
-
         when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
-        when(tradeLegRepository.save(any(TradeLeg.class))).thenReturn(tradeleg1, tradeleg2);
+        when(tradeLegService.createTradeLegs(tradeDTO, trade)).thenReturn(List.of(tradeLeg1, tradeLeg2));
+        populateReferenceData(trade, tradeDTO);
 
         // When - createTrade method call
-        tradeService.populateReferenceDataByName(trade, tradeDTO);
         Trade result = tradeService.createTrade(tradeDTO);
 
         // Then - Verifies the trade was created and there was no errors
         assertNotNull(result);
         verify(tradeValidator).validateTradeBusinessRules(tradeDTO);
-        verify(tradeValidator).validateTradeLegConsistency(tradeDTO.getTradeLegs());
-
     }
 
     /**
@@ -498,11 +484,10 @@ class TradeServiceTest {
     @Test
     void testCreateTradeValidationBusinessRules_ShouldFail() {
 
-        // Given - List of errors, validation result & mocked stubbing
-        List<String> errors = new ArrayList<>();
+        // Given - List of errors, validation result, before trade date & mocked
+        // stubbing
+        trade.setTradeStartDate(LocalDate.of(2025, 1, 10));
         errors.add("Start date cannot be before trade date");
-
-        ValidationResult inValidResult = ValidationResult.isNotValid(errors);
         when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(inValidResult);
 
         // When - A ValidationException is thrown and assertThrows returns the exception
@@ -516,38 +501,42 @@ class TradeServiceTest {
         verify(tradeRepository, never()).save(any());
     }
 
-    /**
-     * Tests if cross leg validation throws a exception
-     */
     @Test
-    void testCreateTradeCrossLegValidation_ShouldFail() {
+    void testTerminateTrade_Success() {
 
-        // Given - List of errors, validation result & mocked stubbing
+        // Given
+        findByTradeId(1L, trade);
+        tradeMapper.toDto(trade);
+        tradeStatus("TERMINATED", trade);
+        trade.setLastTouchTimestamp(LocalDateTime.now());
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
-        List<String> errors = new ArrayList<>();
-        errors.add("Floating legs must have an index specified");
-        errors.add("Fixed legs must have a valid rate");
+        // When
+        Trade result = tradeService.terminateTrade(trade.getId());
 
-        ValidationResult validResult = ValidationResult.isValid();
-        ValidationResult inValidResult = ValidationResult.isNotValid(errors);
+        // Then
+        assertNotNull(result);
+        assertEquals("TERMINATED", result.getTradeStatus().getTradeStatus());
+        verify(tradeRepository).save(any(Trade.class));
+    }
 
-        // Mocked validation of both validation results one has valid results and one
-        // has invalid results
-        when(tradeValidator.validateTradeBusinessRules(tradeDTO)).thenReturn(validResult);
-        when(tradeValidator.validateTradeLegConsistency(tradeDTO.getTradeLegs())).thenReturn(inValidResult);
+    @Test
+    void testCancelTrade_Success() {
 
-        // When - A ValidationException is thrown and assertThrows returns the
-        // exceptions
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
-            tradeService.createTrade(tradeDTO);
-        });
+        // Given
+        findByTradeId(1L, trade);
+        tradeMapper.toDto(trade);
+        tradeStatus("CANCELLED", trade);
+        trade.setLastTouchTimestamp(LocalDateTime.now());
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
-        // Then - Verifies the exception was thrown
-        assertEquals("Floating legs must have an index specified", exception.getErrors().get(0));
-        assertEquals("Fixed legs must have a valid rate", exception.getErrors().get(1));
-        assertEquals(2, exception.getErrors().size());
-        verify(tradeRepository, never()).save(any());
+        // When
+        Trade result = tradeService.cancelTrade(trade.getId());
 
+        // Then
+        assertNotNull(result);
+        assertEquals("CANCELLED", result.getTradeStatus().getTradeStatus());
+        verify(tradeRepository).save(any(Trade.class));
     }
 
 }
