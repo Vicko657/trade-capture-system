@@ -5,16 +5,28 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.technicalchallenge.dto.CashflowDTO;
 import com.technicalchallenge.dto.CashflowGenerationRequest;
 import com.technicalchallenge.mapper.CashflowMapper;
+import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.PayRec;
+import com.technicalchallenge.model.Privilege;
 import com.technicalchallenge.model.TradeLeg;
+import com.technicalchallenge.model.UserPrivilege;
+import com.technicalchallenge.model.UserProfile;
+import com.technicalchallenge.security.ApplicationUserDetails;
 import com.technicalchallenge.service.CashflowService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -42,6 +54,9 @@ public class CashflowControllerTest {
     @MockBean
     private CashflowMapper cashflowMapper;
 
+    @InjectMocks
+    private ApplicationUserDetails userDetails;
+
     private ObjectMapper objectMapper;
     private CashflowDTO cashflowDTO;
     private Cashflow cashflow;
@@ -52,6 +67,44 @@ public class CashflowControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+
+        // Privilege Reference
+        // Privilege Reference
+        Privilege privilege1 = new Privilege();
+        privilege1.setName("READ_TRADE");
+        Privilege privilege2 = new Privilege();
+        privilege2.setName("CREATE_TRADE");
+        Privilege privilege3 = new Privilege();
+        privilege3.setName("TERMINATE_TRADE");
+
+        // UserPrivilege Reference
+        UserPrivilege userPrivilege1 = new UserPrivilege();
+        userPrivilege1.setPrivilege(privilege1);
+
+        UserPrivilege userPrivilege2 = new UserPrivilege();
+        userPrivilege2.setPrivilege(privilege2);
+
+        UserPrivilege userPrivilege3 = new UserPrivilege();
+        userPrivilege3.setPrivilege(privilege3);
+
+        // Application User Reference
+        ApplicationUser applicationUser = new ApplicationUser();
+        applicationUser.setId(1L);
+        applicationUser.setActive(true);
+        applicationUser.setVersion(1);
+        applicationUser.setFirstName("John");
+        applicationUser.setLastName("Doe");
+
+        UserProfile userProfile = new UserProfile();
+        userProfile.setId(1L);
+        userProfile.setUserType("TRADER");
+        userProfile.setPrivileges(List.of(userPrivilege1));
+        userProfile.setPrivileges(List.of(userPrivilege2));
+        userProfile.setPrivileges(List.of(userPrivilege3));
+        applicationUser.setUserProfile(userProfile);
+
+        // Application User Details Reference
+        userDetails = new ApplicationUserDetails(applicationUser);
 
         // Set up related entities
         tradeLeg = new TradeLeg();
@@ -83,9 +136,17 @@ public class CashflowControllerTest {
         when(cashflowMapper.toDto(any(Cashflow.class))).thenReturn(cashflowDTO);
         when(cashflowMapper.toEntity(any(CashflowDTO.class))).thenReturn(cashflow);
         doNothing().when(cashflowService).populateReferenceDataByName(any(Cashflow.class), any(CashflowDTO.class));
+
+        // Mocked User Authentication for Test (Spring Security)
+        ApplicationUserDetails userDetails = new ApplicationUserDetails(applicationUser);
+        Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "READ_TRADE" })
+    @DisplayName("GetAllCashflows: 200 OK Response")
     void testGetAllCashflows() throws Exception {
         // Given
         List<Cashflow> cashflows = Arrays.asList(cashflow);
@@ -104,6 +165,8 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "READ_TRADE" })
+    @DisplayName("GetCashflowById: 200 OK Response")
     void testGetCashflowById() throws Exception {
         // Given
         when(cashflowService.getCashflowById(1L)).thenReturn(Optional.of(cashflow));
@@ -121,6 +184,8 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "READ_TRADE" })
+    @DisplayName("GetCashflowById: 404 Not Found")
     void testGetCashflowByIdNotFound() throws Exception {
         // Given
         when(cashflowService.getCashflowById(999L)).thenReturn(Optional.empty());
@@ -134,15 +199,18 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "CREATE_TRADE" })
+    @DisplayName("CreateCashflow: 201 Created")
     void testCreateCashflow() throws Exception {
         // Given
         when(cashflowService.saveCashflow(any(Cashflow.class))).thenReturn(cashflow);
 
         // When/Then
         mockMvc.perform(post("/api/cashflows")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cashflowDTO)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.paymentValue", is(25000.0)));
 
@@ -151,12 +219,15 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "CREATE_TRADE" })
+    @DisplayName("CreateCashflow: 400 Bad Request")
     void testCreateCashflowValidationFailure_NegativePaymentValue() throws Exception {
         // Given
         cashflowDTO.setPaymentValue(BigDecimal.valueOf(-5000.0));
 
         // When/Then
         mockMvc.perform(post("/api/cashflows")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cashflowDTO)))
                 .andExpect(status().isBadRequest())
@@ -166,12 +237,15 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "CREATE_TRADE" })
+    @DisplayName("CreateCashflow: 400 Bad Request")
     void testCreateCashflowValidationFailure_MissingValueDate() throws Exception {
         // Given
         cashflowDTO.setValueDate(null);
 
         // When/Then
         mockMvc.perform(post("/api/cashflows")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cashflowDTO)))
                 .andExpect(status().isBadRequest())
@@ -181,12 +255,15 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "TERMINATE_TRADE" })
+    @DisplayName("DeleteCashflow: 204 No Content")
     void testDeleteCashflow() throws Exception {
         // Given
         doNothing().when(cashflowService).deleteCashflow(1L);
 
         // When/Then
         mockMvc.perform(delete("/api/cashflows/1")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
@@ -194,6 +271,8 @@ public class CashflowControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "CREATE_TRADE" })
+    @DisplayName("GenerateCashflows: 200 OK Response")
     void testGenerateCashflows() throws Exception {
         // Given
         CashflowGenerationRequest request = new CashflowGenerationRequest();
@@ -215,12 +294,15 @@ public class CashflowControllerTest {
 
         // When/Then
         mockMvc.perform(post("/api/cashflows/generate")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
     }
 
     @Test
+    @WithMockUser(username = "john", authorities = { "CREATE_TRADE" })
+    @DisplayName("GenerateCashflows: 400 Bad Request")
     void testGenerateCashflowsWithNoLegs() throws Exception {
         // Given
         CashflowGenerationRequest request = new CashflowGenerationRequest();
@@ -230,6 +312,7 @@ public class CashflowControllerTest {
 
         // When/Then
         mockMvc.perform(post("/api/cashflows/generate")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
