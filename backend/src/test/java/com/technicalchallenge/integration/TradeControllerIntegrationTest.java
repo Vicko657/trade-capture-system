@@ -18,13 +18,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
-import com.technicalchallenge.repository.TradeRepository;
-
-import jakarta.transaction.Transactional;
 
 /**
  * Integration Tests for Trade Controller
@@ -40,15 +38,11 @@ public class TradeControllerIntegrationTest {
         private MockMvc mockMvc;
 
         @Autowired
-        private TradeRepository tradeRepository;
-
-        @Autowired
         private ObjectMapper mapper;
 
         @BeforeEach
         void setUp() {
 
-                tradeRepository.deleteAll();
         }
 
         /**
@@ -59,15 +53,16 @@ public class TradeControllerIntegrationTest {
         void shouldReturnTradesMatchingSearchCriteria() throws Exception {
 
                 mockMvc.perform(get("/api/trades/search")
-                                .param("traderUserFirstName", "Stacey")
-                                .param("tradeStatus", "NEW")
+                                .with(httpBasic("simon", "password"))
+                                .param("traderUserFirstName", "Simon")
+                                .param("tradeStatus", "LIVE")
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$[0].bookName").value("FX-BOOK-1"))
-                                .andExpect(jsonPath("$[1].counterpartyName").value("BigBank"))
-                                .andExpect(jsonPath("$[0].tradeStatus").value("NEW"))
-                                .andExpect(jsonPath("$.length()").value(6));
+                                .andExpect(jsonPath("$[0].counterpartyName").value("BigBank"))
+                                .andExpect(jsonPath("$[0].tradeStatus").value("LIVE"))
+                                .andExpect(jsonPath("$.length()").value(1));
         }
 
         /**
@@ -78,6 +73,7 @@ public class TradeControllerIntegrationTest {
         void shouldReturnNoContentWhenNoMatchingTrades() throws Exception {
 
                 mockMvc.perform(get("/api/trades/search")
+                                .with(httpBasic("simon", "password"))
                                 .param("bookName", "N/A")
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
@@ -92,13 +88,14 @@ public class TradeControllerIntegrationTest {
         void shouldReturnTradesMatchingCounterparty() throws Exception {
 
                 mockMvc.perform(get("/api/trades/rsql")
+                                .with(httpBasic("simon", "password"))
                                 .param("query", "counterparty.name==MegaFund")
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$[0].counterpartyName").value("MegaFund"))
-                                .andExpect(jsonPath("$[0].tradeStatus").value("NEW"))
-                                .andExpect(jsonPath("$.length()").value(5));
+                                .andExpect(jsonPath("$[0].tradeStatus").value("LIVE"))
+                                .andExpect(jsonPath("$.length()").value(2));
         }
 
         /**
@@ -110,14 +107,15 @@ public class TradeControllerIntegrationTest {
         void shouldReturnTradesMatchingComplexMultiCriteriaSearch() throws Exception {
 
                 mockMvc.perform(get("/api/trades/rsql")
-                                .param("query", "(counterparty.name==BigBank,counterparty.name==MegaFund);tradeStatus.tradeStatus==NEW")
+                                .with(httpBasic("simon", "password"))
+                                .param("query", "(counterparty.name==BigBank,counterparty.name==MegaFund);tradeStatus.tradeStatus==LIVE")
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$[0].bookName").value("FX-BOOK-1"))
-                                .andExpect(jsonPath("$[1].counterpartyName").value("BigBank"))
-                                .andExpect(jsonPath("$[0].tradeStatus").value("NEW"))
-                                .andExpect(jsonPath("$.length()").value(6));
+                                .andExpect(jsonPath("$[1].counterpartyName").value("MegaFund"))
+                                .andExpect(jsonPath("$[0].tradeStatus").value("LIVE"))
+                                .andExpect(jsonPath("$.length()").value(3));
         }
 
         /**
@@ -128,13 +126,14 @@ public class TradeControllerIntegrationTest {
         void shouldReturnTradesMatchingDateRange() throws Exception {
 
                 mockMvc.perform(get("/api/trades/rsql")
-                                .param("query", "tradeDate=ge=2025-01-01;tradeDate=le=2025-12-31")
+                                .with(httpBasic("simon", "password"))
+                                .param("query", "tradeDate=ge=2024-01-01;tradeDate=le=2024-12-31")
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$[0].tradeDate").value("2025-02-04"))
-                                .andExpect(jsonPath("$[1].tradeDate").value("2025-03-30"))
-                                .andExpect(jsonPath("$.length()").value(6));
+                                .andExpect(jsonPath("$[0].tradeDate").value("2024-06-01"))
+                                .andExpect(jsonPath("$[1].tradeDate").value("2024-06-02"))
+                                .andExpect(jsonPath("$.length()").value(3));
         }
 
         /**
@@ -145,15 +144,16 @@ public class TradeControllerIntegrationTest {
         void shouldReturnPaginatedResults() throws Exception {
 
                 mockMvc.perform(get("/api/trades/filter")
+                                .with(httpBasic("simon", "password"))
                                 .param("pageNo", "1")
                                 .param("pageSize", "20")
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.content.length()").value(6))
-                                .andExpect(jsonPath("$.totalElements").value(6))
+                                .andExpect(jsonPath("$.content.length()").value(3))
+                                .andExpect(jsonPath("$.totalElements").value(3))
                                 .andExpect(jsonPath("$.content[0].bookName").value("FX-BOOK-1"))
-                                .andExpect(jsonPath("$.content[0].tradeStatus").value("NEW"));
+                                .andExpect(jsonPath("$.content[0].tradeStatus").value("LIVE"));
         }
 
         /**
@@ -164,6 +164,7 @@ public class TradeControllerIntegrationTest {
         void shouldReturnSortedResults() throws Exception {
 
                 mockMvc.perform(get("/api/trades/filter")
+                                .with(httpBasic("simon", "password"))
                                 .param("pageNo", "1")
                                 .param("pageSize", "10")
                                 .param("sortBy", "tradeId")
@@ -171,10 +172,10 @@ public class TradeControllerIntegrationTest {
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.content.length()").value(6))
-                                .andExpect(jsonPath("$.totalElements").value(6))
-                                .andExpect(jsonPath("$.content[0].tradeId").value(100008L))
-                                .andExpect(jsonPath("$.content[5].tradeId").value(100003L));
+                                .andExpect(jsonPath("$.content.length()").value(3))
+                                .andExpect(jsonPath("$.totalElements").value(3))
+                                .andExpect(jsonPath("$.content[0].tradeId").value(100003L))
+                                .andExpect(jsonPath("$.content[2].tradeId").value(100001L));
         }
 
         /**
@@ -185,6 +186,7 @@ public class TradeControllerIntegrationTest {
         void shouldReturnCombinedFilteredPaginatedAndSortedResults() throws Exception {
 
                 mockMvc.perform(get("/api/trades/filter")
+                                .with(httpBasic("simon", "password"))
                                 .param("bookName",
                                                 "FX-BOOK-1")
                                 .param("sortBy", "utiCode")
@@ -194,10 +196,10 @@ public class TradeControllerIntegrationTest {
                                 .contentType(
                                                 MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.content.length()").value(3))
-                                .andExpect(jsonPath("$.totalElements").value(3))
-                                .andExpect(jsonPath("$.content[2].bookName").value("FX-BOOK-1"))
-                                .andExpect(jsonPath("$.content[0].utiCode").value("UTI-003"));
+                                .andExpect(jsonPath("$.content.length()").value(1))
+                                .andExpect(jsonPath("$.totalElements").value(1))
+                                .andExpect(jsonPath("$.content[0].bookName").value("FX-BOOK-1"))
+                                .andExpect(jsonPath("$.content[0].utiCode").value("UTI-001"));
         }
 
         /**
@@ -208,6 +210,7 @@ public class TradeControllerIntegrationTest {
         void shouldReturnNoContentWhenNoResults() throws Exception {
 
                 mockMvc.perform(get("/api/trades/filter")
+                                .with(httpBasic("simon", "password"))
                                 .param("counterpartyName", "N/A")
                                 .param("sortBy", "id")
                                 .param("sortDir", "desc")
@@ -283,7 +286,7 @@ public class TradeControllerIntegrationTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(mapper.writeValueAsString(tradeDTO)))
                                 .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.tradeId").value(10000))
+                                .andExpect(jsonPath("$.tradeId").value(10003))
                                 .andExpect(jsonPath("$.tradeLegs.length()").value(2))
 
                                 // Verifies fixed leg returns 3 cashflows with 87500 payment value
