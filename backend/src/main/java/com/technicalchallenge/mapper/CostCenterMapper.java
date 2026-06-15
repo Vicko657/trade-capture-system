@@ -3,18 +3,18 @@ package com.technicalchallenge.mapper;
 import com.technicalchallenge.dto.CostCenterDTO;
 import com.technicalchallenge.model.CostCenter;
 import com.technicalchallenge.repository.SubDeskRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import com.technicalchallenge.model.SubDesk;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class CostCenterMapper {
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private SubDeskRepository subDeskRepository;
+    private final ModelMapper modelMapper;
+    private final SubDeskRepository subDeskRepository;
 
     public CostCenterDTO toDto(CostCenter entity) {
         CostCenterDTO dto = modelMapper.map(entity, CostCenterDTO.class);

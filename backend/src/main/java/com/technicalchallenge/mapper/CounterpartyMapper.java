@@ -2,14 +2,17 @@ package com.technicalchallenge.mapper;
 
 import com.technicalchallenge.dto.CounterpartyDTO;
 import com.technicalchallenge.model.Counterparty;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class CounterpartyMapper {
-    @Autowired
-    private ModelMapper modelMapper;
+
+    private final ModelMapper modelMapper;
 
     public CounterpartyDTO toDto(Counterparty entity) {
         return modelMapper.map(entity, CounterpartyDTO.class);

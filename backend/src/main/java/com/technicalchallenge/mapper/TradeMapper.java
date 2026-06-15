@@ -3,17 +3,19 @@ package com.technicalchallenge.mapper;
 import com.technicalchallenge.dto.TradeDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.Trade;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class TradeMapper {
 
-    @Autowired
-    private TradeLegMapper tradeLegMapper;
+    private final TradeLegMapper tradeLegMapper;
 
     public TradeDTO toDto(Trade trade) {
         if (trade == null) {

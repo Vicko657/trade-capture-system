@@ -4,20 +4,20 @@ import com.technicalchallenge.dto.UserDTO;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.UserProfile;
 import com.technicalchallenge.repository.UserProfileRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class ApplicationUserMapper {
 
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private UserProfileRepository userProfileRepository;
+    private final ModelMapper modelMapper;
+    private final UserProfileRepository userProfileRepository;
 
     public UserDTO toDto(ApplicationUser entity) {
         UserDTO dto = modelMapper.map(entity, UserDTO.class);
@@ -36,4 +36,3 @@ public class ApplicationUserMapper {
         return entity;
     }
 }
-

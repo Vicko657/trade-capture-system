@@ -3,18 +3,18 @@ package com.technicalchallenge.mapper;
 import com.technicalchallenge.dto.BookDTO;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.repository.CostCenterRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import com.technicalchallenge.model.CostCenter;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class BookMapper {
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private CostCenterRepository costCenterRepository;
+    private final ModelMapper modelMapper;
+    private final CostCenterRepository costCenterRepository;
 
     public BookDTO toDto(Book entity) {
         BookDTO dto = modelMapper.map(entity, BookDTO.class);

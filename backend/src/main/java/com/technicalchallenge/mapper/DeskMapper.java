@@ -2,14 +2,17 @@ package com.technicalchallenge.mapper;
 
 import com.technicalchallenge.dto.DeskDTO;
 import com.technicalchallenge.model.Desk;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class DeskMapper {
-    @Autowired
-    private ModelMapper modelMapper;
+
+    private final ModelMapper modelMapper;
 
     public DeskDTO toDto(Desk entity) {
         return modelMapper.map(entity, DeskDTO.class);

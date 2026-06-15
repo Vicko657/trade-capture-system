@@ -2,14 +2,16 @@ package com.technicalchallenge.mapper;
 
 import com.technicalchallenge.dto.BusinessDayConventionDTO;
 import com.technicalchallenge.model.BusinessDayConvention;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class BusinessDayConventionMapper {
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
     public BusinessDayConventionDTO toDto(BusinessDayConvention entity) {
         return modelMapper.map(entity, BusinessDayConventionDTO.class);

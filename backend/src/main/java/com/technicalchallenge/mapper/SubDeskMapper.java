@@ -3,18 +3,18 @@ package com.technicalchallenge.mapper;
 import com.technicalchallenge.dto.SubDeskDTO;
 import com.technicalchallenge.model.SubDesk;
 import com.technicalchallenge.repository.DeskRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import com.technicalchallenge.model.Desk;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class SubDeskMapper {
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private DeskRepository deskRepository;
+    private final ModelMapper modelMapper;
+    private final DeskRepository deskRepository;
 
     public SubDeskDTO toDto(SubDesk entity) {
         SubDeskDTO dto = modelMapper.map(entity, SubDeskDTO.class);
@@ -26,8 +26,8 @@ public class SubDeskMapper {
         SubDesk entity = modelMapper.map(dto, SubDesk.class);
         if (dto.getDeskName() != null) {
             Desk desk = deskRepository.findAll().stream()
-                .filter(d -> dto.getDeskName().equals(d.getDeskName()))
-                .findFirst().orElse(null);
+                    .filter(d -> dto.getDeskName().equals(d.getDeskName()))
+                    .findFirst().orElse(null);
             entity.setDesk(desk);
         }
         return entity;

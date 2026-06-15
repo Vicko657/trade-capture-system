@@ -4,17 +4,18 @@ import com.technicalchallenge.dto.CashflowDTO;
 import com.technicalchallenge.dto.TradeLegDTO;
 import com.technicalchallenge.model.TradeLeg;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class TradeLegMapper {
 
-    @Autowired
-    private CashflowMapper cashflowMapper;
+    private final CashflowMapper cashflowMapper;
 
     public TradeLegDTO toDto(TradeLeg leg) {
 

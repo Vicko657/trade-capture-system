@@ -2,14 +2,17 @@ package com.technicalchallenge.mapper;
 
 import com.technicalchallenge.dto.PrivilegeDTO;
 import com.technicalchallenge.model.Privilege;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class PrivilegeMapper {
-    @Autowired
-    private ModelMapper modelMapper;
+
+    private final ModelMapper modelMapper;
 
     public PrivilegeDTO toDto(Privilege entity) {
         return modelMapper.map(entity, PrivilegeDTO.class);

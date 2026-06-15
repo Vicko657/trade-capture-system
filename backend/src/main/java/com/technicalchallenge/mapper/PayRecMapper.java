@@ -2,14 +2,16 @@ package com.technicalchallenge.mapper;
 
 import com.technicalchallenge.dto.PayRecDTO;
 import com.technicalchallenge.model.PayRec;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class PayRecMapper {
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
     public PayRecDTO toDto(PayRec entity) {
         return modelMapper.map(entity, PayRecDTO.class);

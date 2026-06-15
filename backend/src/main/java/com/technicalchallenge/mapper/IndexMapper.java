@@ -2,14 +2,17 @@ package com.technicalchallenge.mapper;
 
 import com.technicalchallenge.dto.IndexDTO;
 import com.technicalchallenge.model.Index;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class IndexMapper {
-    @Autowired
-    private ModelMapper modelMapper;
+
+    private final ModelMapper modelMapper;
 
     public IndexDTO toDto(Index entity) {
         return modelMapper.map(entity, IndexDTO.class);
