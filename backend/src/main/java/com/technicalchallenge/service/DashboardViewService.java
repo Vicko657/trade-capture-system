@@ -219,11 +219,12 @@ public class DashboardViewService {
                                 .flatMap(trade -> trade.getTradeLegs().stream()).map(TradeLeg::getNotional)
                                 .collect(BigDecimalSummaryStatistics.statistics());
 
-                Metrics todaysStats = new Metrics(todaysMetrics.getCount(),
+                Metrics todaysStats = new Metrics(Long.valueOf(todaysTrades.size()),
                                 todaysMetrics.getAverage(MathContext.DECIMAL64),
                                 todaysMetrics.getSum());
-                Metrics yesterdaysStats = new Metrics(yesterdaysMetrics.getCount(), yesterdaysMetrics.getAverage(
-                                MathContext.DECIMAL64),
+
+                Metrics yesterdaysStats = new Metrics(Long.valueOf(yesterdaysTrades.size()),
+                                yesterdaysMetrics.getAverage(MathContext.DECIMAL64),
                                 yesterdaysMetrics.getSum());
 
                 Map<String, DailySummaryDTO.Metrics> metrics = new HashMap<>();
