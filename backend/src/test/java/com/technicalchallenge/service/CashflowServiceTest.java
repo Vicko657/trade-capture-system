@@ -1,6 +1,10 @@
 package com.technicalchallenge.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.technicalchallenge.calculations.BigDecimalPercentages;
+import com.technicalchallenge.dto.CashflowDTO;
+import com.technicalchallenge.mapper.CashflowMapper;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.Index;
 import com.technicalchallenge.model.LegType;
@@ -50,6 +54,12 @@ public class CashflowServiceTest {
     @InjectMocks
     private CashflowService cashflowService;
 
+    @Mock
+    private CashflowMapper cashflowMapper;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
     private Cashflow cashflow1;
     private Cashflow cashflow2;
     private List<Cashflow> cashflowList;
@@ -62,6 +72,8 @@ public class CashflowServiceTest {
     @BeforeEach
     void setUp() {
         // Set up related entities
+        objectMapper.registerModule(new JavaTimeModule());
+
         tradeLeg = new TradeLeg();
         tradeLeg.setLegId(1L);
         tradeLeg.setNotional(BigDecimal.valueOf(1000000.0));
@@ -172,14 +184,23 @@ public class CashflowServiceTest {
     @Test
     void testSaveCashflow() {
         // Given
-        Cashflow newCashflow = new Cashflow();
-        newCashflow.setTradeLeg(tradeLeg); // Fixed: was setLeg
+
+        CashflowDTO newCashflow = new CashflowDTO();
+        newCashflow.setLegId(tradeLeg.getLegId()); // Fixed: was setLeg
         newCashflow.setPaymentValue(BigDecimal.valueOf(30000.0));
         newCashflow.setValueDate(LocalDate.now().plusMonths(9));
-        newCashflow.setPayRec(payRec);
+        newCashflow.setPayRec(payRec.getPayRec());
         newCashflow.setRate(0.04);
 
-        when(cashflowRepository.save(any(Cashflow.class))).thenReturn(newCashflow);
+        Cashflow cashflow = new Cashflow();
+        cashflow.setTradeLeg(tradeLeg); // Fixed: was setLeg
+        cashflow.setPaymentValue(BigDecimal.valueOf(30000.0));
+        cashflow.setValueDate(LocalDate.now().plusMonths(9));
+        cashflow.setPayRec(payRec);
+        cashflow.setRate(0.04);
+
+        when(cashflowMapper.toEntity(newCashflow)).thenReturn(cashflow);
+        when(cashflowRepository.save(any(Cashflow.class))).thenReturn(cashflow);
 
         // When
         Cashflow savedCashflow = cashflowService.saveCashflow(newCashflow);
@@ -188,14 +209,15 @@ public class CashflowServiceTest {
         assertNotNull(savedCashflow);
         assertEquals(BigDecimal.valueOf(30000.0), savedCashflow.getPaymentValue());
         assertEquals(0.04, savedCashflow.getRate());
-        verify(cashflowRepository).save(newCashflow);
+        verify(cashflowRepository).save(cashflow);
     }
 
     @Test
     void testSaveCashflowWithInvalidPaymentValue() {
         // Given
-        Cashflow invalidCashflow = new Cashflow();
-        invalidCashflow.setTradeLeg(tradeLeg); // Fixed: was setLeg
+
+        CashflowDTO invalidCashflow = new CashflowDTO();
+        invalidCashflow.setLegId(tradeLeg.getLegId()); // Fixed: was setLeg
         invalidCashflow.setPaymentValue(BigDecimal.valueOf(-10000.0)); // Negative value
         invalidCashflow.setValueDate(LocalDate.now().plusMonths(3));
 
@@ -209,8 +231,8 @@ public class CashflowServiceTest {
     @Test
     void testSaveCashflowWithMissingValueDate() {
         // Given
-        Cashflow invalidCashflow = new Cashflow();
-        invalidCashflow.setTradeLeg(tradeLeg); // Fixed: was setLeg
+        CashflowDTO invalidCashflow = new CashflowDTO();
+        invalidCashflow.setLegId(tradeLeg.getLegId()); // Fixed: was setLeg
         invalidCashflow.setPaymentValue(BigDecimal.valueOf(15000.0));
         invalidCashflow.setValueDate(null); // Missing value date
 
