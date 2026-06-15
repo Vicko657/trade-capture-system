@@ -2,7 +2,6 @@ package com.technicalchallenge.validation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.technicalchallenge.dto.TradeDTO;
@@ -34,6 +33,7 @@ import com.technicalchallenge.service.TradeStatusService;
 import com.technicalchallenge.service.TradeTypeService;
 
 import jakarta.validation.ValidationException;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 
@@ -45,34 +45,23 @@ import jakarta.validation.ValidationException;
  * 
  */
 @Component
+@RequiredArgsConstructor
 public class ReferenceDataValidator {
 
     private static final Logger logger = LoggerFactory.getLogger(ReferenceDataValidator.class);
 
-    @Autowired
-    private BookService bookService;
-    @Autowired
-    private CounterpartyService counterpartyService;
-    @Autowired
-    private TradeStatusService tradeStatusService;
-    @Autowired
-    private TradeTypeService tradeTypeService;
-    @Autowired
-    private ApplicationUserService applicationUserService;
-    @Autowired
-    private CurrencyService currencyService;
-    @Autowired
-    private PayRecService payRecService;
-    @Autowired
-    private ScheduleService scheduleService;
-    @Autowired
-    private LegTypeService legTypeService;
-    @Autowired
-    private HolidayCalendarService holidayCalendarService;
-    @Autowired
-    private IndexService indexService;
-    @Autowired
-    private BusinessDayConventionService businessDayConventionService;
+    private final BookService bookService;
+    private final CounterpartyService counterpartyService;
+    private final TradeStatusService tradeStatusService;
+    private final TradeTypeService tradeTypeService;
+    private final ApplicationUserService applicationUserService;
+    private final CurrencyService currencyService;
+    private final PayRecService payRecService;
+    private final ScheduleService scheduleService;
+    private final LegTypeService legTypeService;
+    private final HolidayCalendarService holidayCalendarService;
+    private final IndexService indexService;
+    private final BusinessDayConventionService businessDayConventionService;
 
     // 1. User, book and counterparty must be active, exist and be valid
 
