@@ -9,6 +9,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,7 +19,9 @@ import java.time.LocalDateTime;
 public class CashflowDTO {
     private Long id;
     private Long legId;
+    @Positive(message = "Cashflow value must be positive")
     private BigDecimal paymentValue;
+    @NotNull(message = "Value date is required")
     private LocalDate valueDate;
     private Double rate;
     private String payRec;
