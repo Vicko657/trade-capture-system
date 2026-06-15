@@ -408,25 +408,20 @@ public class TradeSearchServiceTest {
          */
         @Test
         void testPagedResultsOfTrades_Success() {
-                // Given - List of 3 trade entities, filtered criteria, pagination and sort DTOs
-
-                // New Trade Two
-                Trade trade2 = new Trade();
-                trade2.setId(2L);
-
-                // New Trade Three
-                Trade trade3 = new Trade();
-                trade3.setId(3L);
+                // Given - List of trade entities, filtered criteria, pagination and sort DTOs
 
                 List<Trade> trades = new ArrayList<>();
-                trades.add(trade);
-                trades.add(trade2);
-                trades.add(trade3);
+
+                for (Long x = 4L; x < 100L; x++) {
+                        Trade trade = new Trade();
+                        trade.setId(x);
+                        trades.add(trade);
+                }
 
                 SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, null, null, null, null, null,
                                 null, null,
                                 null);
-                PaginationDTO pagination = new PaginationDTO(2, 3);
+                PaginationDTO pagination = new PaginationDTO(trades.size() / 3, 3);
                 SortDTO sortField = new SortDTO(null, null);
 
                 // Mocked repository, page and pageable without sort
@@ -440,8 +435,8 @@ public class TradeSearchServiceTest {
                 Page<Trade> result = tradeSearchService.getAllTrades(criteriaSearch, pagination, sortField);
 
                 // Then - Verifies that pagination is working seperately
-                assertEquals(3, result.getContent().size()); // 3
-                assertEquals(2, result.getTotalPages()); // 2 pages
+                assertEquals(trades.size(), result.getContent().size());
+                assertEquals(trades.size() / pagination.pageSize(), result.getTotalPages());
                 assertTrue(result.getPageable().isPaged()); // true
                 verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(),
                                 any(Pageable.class));
@@ -452,33 +447,25 @@ public class TradeSearchServiceTest {
          */
         @Test
         void testPagedAndSortedResultsOfTrades_Success() {
-                // Given - List of 3 trade entities, filtered criteria, pagination and sort DTOs
-
-                // New Trade Two
-                Trade trade2 = new Trade();
-                trade2.setId(2L);
-
-                // New Trade Three
-                Trade trade3 = new Trade();
-                trade3.setId(3L);
+                // Given - List of trade entities, filtered criteria, pagination and sort DTOs
 
                 List<Trade> trades = new ArrayList<>();
-                trades.add(trade3);
-                trades.add(trade2);
-                trades.add(trade);
+
+                for (Long x = 0L; x < 10000L; x++) {
+                        Trade trade = new Trade();
+                        trade.setId(x);
+                        trades.add(trade);
+                }
 
                 SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, null, null, null, null, null,
                                 null, null,
                                 null);
-                PaginationDTO pagination = new PaginationDTO(1, 4);
+                PaginationDTO pagination = new PaginationDTO(trades.size() / 4, 4);
                 SortDTO sortField = new SortDTO("id", "desc");
 
                 // Mocked Pageable with sort, page and repository
                 Sort sort = Sort.by("id").descending();
-                Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination
-                                .pageSize(),
-                                sort);
-
+                Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination.pageSize(), sort);
                 Page<Trade> mockPage = new PageImpl<>(trades, pageable, trades.size());
                 when(tradeRepository.findAll(ArgumentMatchers
                                 .<Specification<Trade>>any(), any(Pageable.class)))
@@ -489,10 +476,10 @@ public class TradeSearchServiceTest {
 
                 // Then - Verifies that both sort and pagination is working
                 assertTrue(result.getSort().isSorted()); // true
-                assertEquals(3, result.getContent().size()); // 3 results
-                assertEquals(3L, result.getContent().get(0).getId()); // desc order
+                assertEquals(trades.size(), result.getContent().size()); // 10,000 results
+                assertEquals(0L, result.getContent().get(0).getId()); // desc order
                 assertTrue(result.getPageable().isPaged()); // true
-                assertEquals(1, result.getTotalPages()); // 1 page
+                assertEquals(trades.size() / pagination.pageSize(), result.getTotalPages()); // 2500 pages
                 verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(),
                                 any(Pageable.class));
         }
@@ -503,39 +490,30 @@ public class TradeSearchServiceTest {
          */
         @Test
         void testCombinitationOfFilteredSearchPaginationAndSortingForResultsOfTrades_Success() {
-                // Given - List of 3 trade entities, ciltered criteria, pagination and sort DTOs
+                // Given - List of trade entities, ciltered criteria, pagination and sort DTOs
 
                 Book book2 = new Book();
                 book2.setBookName("TestBookA");
 
-                // New Trade Two
-                Trade trade2 = new Trade();
-                trade2.setId(2L);
-                trade2.setTradeId(1002L);
-                trade2.setBook(book2);
-
-                // New Trade Three
-                Trade trade3 = new Trade();
-                trade3.setId(3L);
-                trade3.setTradeId(1003L);
-                trade3.setBook(book2);
-
                 List<Trade> trades = new ArrayList<>();
-                trades.add(trade3);
-                trades.add(trade2);
+
+                for (Long x = 0L; x < 151L - 1; x++) {
+                        Trade trade = new Trade();
+                        trade.setId(x);
+                        trade.setTradeId(x + 1000L);
+                        trade.setBook(book2);
+                        trades.add(trade);
+                }
 
                 SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria("TestBookA", null, null, null,
                                 null, null, null,
                                 null, null);
-                PaginationDTO pagination = new PaginationDTO(2, 3);
+                PaginationDTO pagination = new PaginationDTO(trades.size() / 3, 3);
                 SortDTO sortField = new SortDTO("tradeId", "desc");
 
                 // Mocked Pageable with sort, page and repository
                 Sort sort = Sort.by("id").descending();
-                Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination
-                                .pageSize(),
-                                sort);
-
+                Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination.pageSize(), sort);
                 Page<Trade> mockPage = new PageImpl<>(trades, pageable, trades.size());
                 when(tradeRepository.findAll(ArgumentMatchers
                                 .<Specification<Trade>>any(), any(Pageable.class)))
@@ -545,11 +523,11 @@ public class TradeSearchServiceTest {
                 Page<Trade> result = tradeSearchService.getAllTrades(criteriaSearch, pagination, sortField);
 
                 // Then - Verifies that filter, sort and pagination work together
-                assertEquals(2, result.getContent().size()); // 2 results
-                assertEquals(1003L, result.getContent().get(0).getTradeId()); // trade3 is first (desc order)
-                assertEquals("TestBookA", result.getContent().get(1).getBook().getBookName()); // trade2 bookName is
-                                                                                               // "TestBookA"
-                assertEquals(2, result.getTotalPages()); // 2 pages
+                assertEquals(trades.size(), result.getContent().size()); // 150 results
+                assertEquals(1000L, result.getContent().get(0).getTradeId()); // trade1000 is first (desc order)
+                assertEquals("TestBookA", result.getContent().get(20).getBook().getBookName()); // trade20 bookName is
+                                                                                                // "TestBookA"
+                assertEquals(trades.size() / pagination.pageSize(), result.getTotalPages()); // 50 pages
                 verify(tradeRepository, times(1)).findAll(ArgumentMatchers.<Specification<Trade>>any(),
                                 any(Pageable.class));
         }
@@ -564,12 +542,12 @@ public class TradeSearchServiceTest {
                 SearchTradeByCriteria criteriaSearch = new SearchTradeByCriteria(null, "TestCounterpartyA", null, null,
                                 null, null, null,
                                 null, null);
-                PaginationDTO pagination = new PaginationDTO(1, 6);
+                PaginationDTO pagination = new PaginationDTO(0, 6);
                 SortDTO sortField = new SortDTO("tradeId", "desc");
 
                 // Mocked Pageable with sort, page and repository
                 Sort sort = Sort.by("id").descending();
-                Pageable pageable = PageRequest.of(pagination.pageNo() - 1, pagination
+                Pageable pageable = PageRequest.of(pagination.pageNo(), pagination
                                 .pageSize(),
                                 sort);
 
