@@ -4,6 +4,7 @@ import com.technicalchallenge.calculations.BigDecimalPercentages;
 import com.technicalchallenge.dto.CashflowDTO;
 import com.technicalchallenge.dto.CashflowGenerationRequest;
 import com.technicalchallenge.dto.CashflowGenerationRequest.TradeLegDTO;
+import com.technicalchallenge.mapper.CashflowMapper;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.repository.CashflowRepository;
@@ -37,6 +38,8 @@ public class CashflowService {
     private BusinessDayConventionRepository businessDayConventionRepository;
     @Autowired
     private BigDecimalPercentages bigDecimalPercentages;
+    @Autowired
+    private CashflowMapper cashflowMapper;
 
     public List<Cashflow> getAllCashflows() {
         logger.info("Retrieving all cashflows");
@@ -48,17 +51,19 @@ public class CashflowService {
         return cashflowRepository.findById(id);
     }
 
-    public Cashflow saveCashflow(Cashflow cashflow) {
-        logger.info("Saving cashflow: {}", cashflow);
+    public Cashflow saveCashflow(CashflowDTO cashflowDTO) {
+        logger.info("Saving cashflow: {}", cashflowDTO);
         // Business logic: value must be positive, valueDate required (enforced in
         // controller)
-        if (cashflow.getPaymentValue() == null
-                || cashflow.getPaymentValue().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+        if (cashflowDTO.getPaymentValue() == null
+                || cashflowDTO.getPaymentValue().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Cashflow value must be greater than 0");
         }
-        if (cashflow.getValueDate() == null) {
+        if (cashflowDTO.getValueDate() == null) {
             throw new IllegalArgumentException("Cashflow valueDate is required");
         }
+        Cashflow cashflow = cashflowMapper.toEntity(cashflowDTO);
+        populateReferenceDataByName(cashflow, cashflowDTO);
         // Ensure Cashflow is saved with related entities set, not just IDs
         return cashflowRepository.save(cashflow);
     }

@@ -79,9 +79,7 @@ public class CashflowController {
     })
     public ResponseEntity<?> createCashflow(@Valid @RequestBody CashflowDTO cashflowDTO) {
         logger.info("Creating new cashflow: {}", cashflowDTO);
-        var entity = cashflowMapper.toEntity(cashflowDTO);
-        cashflowService.populateReferenceDataByName(entity, cashflowDTO);
-        var saved = cashflowService.saveCashflow(entity);
+        var saved = cashflowService.saveCashflow(cashflowDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(cashflowMapper.toDto(saved));
     }
 
