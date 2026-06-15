@@ -53,7 +53,7 @@ public interface TradeRepository extends JpaRepository<Trade, Long>, JpaSpecific
             Pageable pageable);
 
     // Total results
-    @Query("SELECT COUNT(t.tradeId), COALESCE(SUM(l.notional), 0) FROM Trade t JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username")
+    @Query("SELECT COUNT(DISTINCT t.tradeId), COALESCE(SUM(l.notional), 0) FROM Trade t JOIN t.tradeLegs l JOIN t.traderUser u WHERE t.traderUser.loginId = :username")
     Object findResultsOfTotals(@Param("username") String username);
 
     // Total number of trades by status
