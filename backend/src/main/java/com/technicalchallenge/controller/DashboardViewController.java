@@ -32,7 +32,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController
 @RequestMapping("/api/trades/dashboard")
-@Tag(name = "Dashboard Views", description = "Trader dashboard and blotter system including personal trades, trades summary, daily summary and book level activity")
+@Tag(name = "Trader Dashboard & Blotter", description = "Trader dashboard and blotter system including personal trades, trades summary, daily summary and book level activity")
 @RequiredArgsConstructor
 public class DashboardViewController {
         private static final Logger logger = LoggerFactory.getLogger(DashboardViewController.class);

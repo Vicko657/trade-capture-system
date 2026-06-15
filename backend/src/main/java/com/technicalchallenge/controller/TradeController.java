@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/trades")
 @Validated
-@Tag(name = "Trades", description = "Trade management operations including booking, searching, and lifecycle management")
+@Tag(name = "Trades", description = "Trade management operations including booking, searching and lifecycle management")
 @RequiredArgsConstructor
 public class TradeController {
         private static final Logger logger = LoggerFactory.getLogger(TradeController.class);

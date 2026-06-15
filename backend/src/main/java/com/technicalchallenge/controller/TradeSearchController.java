@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/trades")
 @Validated
-@Tag(name = "Trade Searches", description = "Trade Search management operations searching, pagination and filtering")
+@Tag(name = "Advanced Trade Search", description = "Trade Search management operations searching, pagination and filtering")
 @RequiredArgsConstructor
 public class TradeSearchController {
 
