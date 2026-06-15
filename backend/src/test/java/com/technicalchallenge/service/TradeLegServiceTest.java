@@ -11,7 +11,6 @@ import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.model.BusinessDayConvention;
-import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.Counterparty;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.model.HolidayCalendar;
@@ -35,13 +34,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -109,8 +106,6 @@ public class TradeLegServiceTest {
     private TradeStatus tradeStatus;
     private TradeLegDTO leg1, leg2;
     private List<TradeLegDTO> tradeLegDTOList;
-    private List<Cashflow> cashflowList1, cashflowList2;
-    private Cashflow cashflow1, cashflow2;
     private Schedule schedule;
     private ApplicationUser traderUser, inputterUser;
     private TradeType tradeType;
