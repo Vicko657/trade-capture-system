@@ -2,6 +2,8 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.calculations.BigDecimalPercentages;
 import com.technicalchallenge.dto.CashflowDTO;
+import com.technicalchallenge.dto.CashflowGenerationRequest;
+import com.technicalchallenge.dto.CashflowGenerationRequest.TradeLegDTO;
 import com.technicalchallenge.model.Cashflow;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.repository.CashflowRepository;
@@ -9,6 +11,7 @@ import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import com.technicalchallenge.repository.LegTypeRepository;
 import com.technicalchallenge.repository.PayRecRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -63,6 +66,44 @@ public class CashflowService {
     public void deleteCashflow(Long id) {
         logger.warn("Deleting cashflow with id: {}", id);
         cashflowRepository.deleteById(id);
+    }
+
+    public List<CashflowDTO> generateCashflowsDTOs(CashflowGenerationRequest request) {
+
+        List<CashflowDTO> allCashflows = new ArrayList<>();
+
+        for (CashflowGenerationRequest.TradeLegDTO leg : request.getLegs()) {
+
+            LocalDate startDate = request.getTradeStartDate();
+            LocalDate maturityDate = request.getTradeMaturityDate();
+
+            // Use default schedule if not set
+            String schedule = "3M"; // Default to quarterly
+            if (leg.getCalculationPeriodSchedule() != null) {
+                schedule = leg.getCalculationPeriodSchedule();
+            }
+
+            int monthsInterval = parseSchedule(schedule);
+            List<LocalDate> paymentDates = calculatePaymentDates(startDate, maturityDate, monthsInterval);
+
+            for (LocalDate paymentDate : paymentDates) {
+
+                BigDecimal paymentValue = calculateCashflowDTOValue(leg, monthsInterval);
+
+                CashflowDTO cf = new CashflowDTO();
+                cf.setValueDate(paymentDate);
+                cf.setPaymentValue(paymentValue);
+                cf.setPayRec(leg.getPayReceiveFlag());
+                cf.setPaymentType(leg.getLegType());
+                cf.setPaymentBusinessDayConvention(leg.getPaymentBusinessDayConvention());
+                cf.setRate(leg.getRate());
+                cf.setActive(true);
+                cf.setCreatedDate(LocalDateTime.now());
+                allCashflows.add(cf);
+
+            }
+        }
+        return allCashflows;
     }
 
     /**
@@ -162,6 +203,37 @@ public class CashflowService {
         }
 
         String legType = leg.getLegRateType().getType();
+
+        if ("Fixed".equals(legType)) {
+
+            // Notional kept as a BigDecimal
+            BigDecimal notional = leg.getNotional();
+
+            // Converts the rate double to BigDecimal decimal
+            Double rate = leg.getRate();
+            BigDecimal rateDecimal = bigDecimalPercentages.percentToDecimal(BigDecimal.valueOf(rate));
+
+            // Converts the month int to BigDecimal
+            BigDecimal months = BigDecimal.valueOf(monthsInterval);
+
+            // Percentage Calculation for a fixed leg
+            BigDecimal result = bigDecimalPercentages.toPercentageOf(notional, rateDecimal, months);
+
+            return result;
+
+        } else if ("Floating".equals(legType)) {
+            return BigDecimal.ZERO;
+        }
+
+        return BigDecimal.ZERO;
+    }
+
+    private BigDecimal calculateCashflowDTOValue(TradeLegDTO leg, int monthsInterval) {
+        if (leg.getLegType() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        String legType = leg.getLegType();
 
         if ("Fixed".equals(legType)) {
 
