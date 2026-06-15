@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,20 +21,19 @@ import com.technicalchallenge.validation.TradeSearchValidator;
 
 import io.github.perplexhub.rsql.RSQLJPASupport;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 /**
  * TradeSearch service class provides search/filter logic for finding trades.
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TradeSearchService {
     private static final Logger logger = LoggerFactory.getLogger(TradeSearchService.class);
 
-    @Autowired
-    private TradeSearchValidator tradeSearchValidator;
-
-    @Autowired
-    private TradeRepository tradeRepository;
+    private final TradeSearchValidator tradeSearchValidator;
+    private final TradeRepository tradeRepository;
 
     /**
      * Trade: Multi Criteria Search

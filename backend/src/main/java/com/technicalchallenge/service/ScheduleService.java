@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.ScheduleNotFoundException;
 import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.repository.ScheduleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ScheduleService {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleService.class);
 
-    @Autowired
-    private ScheduleRepository scheduleRepository;
+    private final ScheduleRepository scheduleRepository;
 
     public List<Schedule> findAll() {
         logger.info("Retrieving all schedules");

@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.HolidayCalenderNotFoundException;
 import com.technicalchallenge.model.HolidayCalendar;
 import com.technicalchallenge.repository.HolidayCalendarRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class HolidayCalendarService {
     private static final Logger logger = LoggerFactory.getLogger(HolidayCalendarService.class);
 
-    @Autowired
-    private HolidayCalendarRepository holidayCalendarRepository;
+    private final HolidayCalendarRepository holidayCalendarRepository;
 
     public List<HolidayCalendar> findAll() {
         logger.info("Retrieving all holiday calendars");

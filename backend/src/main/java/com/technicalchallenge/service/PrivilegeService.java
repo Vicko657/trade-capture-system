@@ -2,7 +2,9 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.model.Privilege;
 import com.technicalchallenge.repository.PrivilegeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -12,11 +14,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class PrivilegeService {
     private static final Logger logger = LoggerFactory.getLogger(PrivilegeService.class);
 
-    @Autowired
-    private PrivilegeRepository privilegeRepository;
+    private final PrivilegeRepository privilegeRepository;
 
     public List<Privilege> getAllPrivileges() {
         logger.info("Retrieving all privileges");

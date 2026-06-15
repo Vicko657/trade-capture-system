@@ -24,6 +24,8 @@ import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.model.TradeLeg;
 import com.technicalchallenge.repository.TradeRepository;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * Dashboard service class provides business logic and operations relating to
  * the dashboard views.
@@ -39,17 +41,11 @@ import com.technicalchallenge.repository.TradeRepository;
  */
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class DashboardViewService {
 
         private final TradeRepository tradeRepository;
-
         private final BigDecimalPercentages bigDecimalPercentages;
-
-        public DashboardViewService(TradeRepository tradeRepository,
-                        BigDecimalPercentages bigDecimalPercentages) {
-                this.tradeRepository = tradeRepository;
-                this.bigDecimalPercentages = bigDecimalPercentages;
-        }
 
         /**
          * Dashboard View: Trader's personal trades

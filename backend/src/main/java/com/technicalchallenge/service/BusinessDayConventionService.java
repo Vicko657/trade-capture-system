@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.BusinessDayConventionNotFoundException;
 import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.repository.BusinessDayConventionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,11 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
+@RequiredArgsConstructor
 public class BusinessDayConventionService {
     private static final Logger logger = LoggerFactory.getLogger(BusinessDayConventionService.class);
 
-    @Autowired
-    private BusinessDayConventionRepository businessDayConventionRepository;
+    private final BusinessDayConventionRepository businessDayConventionRepository;
 
     public List<BusinessDayConvention> findAll() {
         logger.info("Retrieving all business day conventions");

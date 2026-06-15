@@ -3,7 +3,8 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.UserNotFoundException;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.repository.ApplicationUserRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ApplicationUserService {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationUserService.class);
     private final ApplicationUserRepository applicationUserRepository;

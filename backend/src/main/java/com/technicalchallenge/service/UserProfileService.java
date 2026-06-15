@@ -2,16 +2,19 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.model.UserProfile;
 import com.technicalchallenge.repository.UserProfileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserProfileService {
-    @Autowired
-    private UserProfileRepository userProfileRepository;
+
+    private final UserProfileRepository userProfileRepository;
 
     public List<UserProfile> getAllUserProfiles() {
         return userProfileRepository.findAll();

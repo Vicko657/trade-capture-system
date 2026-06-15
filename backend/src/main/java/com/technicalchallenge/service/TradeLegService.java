@@ -16,7 +16,9 @@ import com.technicalchallenge.repository.TradeLegRepository;
 import com.technicalchallenge.validation.ReferenceDataValidator;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,17 +29,14 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class TradeLegService {
     private static final Logger logger = LoggerFactory.getLogger(TradeLegService.class);
 
-    @Autowired
-    private TradeLegRepository tradeLegRepository;
-    @Autowired
-    private TradeValidator tradeValidator;
-    @Autowired
-    private ReferenceDataValidator referenceDataValidator;
-    @Autowired
-    private TradeLegMapper tradeLegMapper;
+    private final TradeLegRepository tradeLegRepository;
+    private final TradeValidator tradeValidator;
+    private final ReferenceDataValidator referenceDataValidator;
+    private final TradeLegMapper tradeLegMapper;
 
     public List<TradeLeg> getAllTradeLegs() {
         logger.info("Retrieving all trade legs");

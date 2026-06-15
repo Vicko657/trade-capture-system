@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.TradeStatusNotFoundException;
 import com.technicalchallenge.model.TradeStatus;
 import com.technicalchallenge.repository.TradeStatusRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,12 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class TradeStatusService {
     private static final Logger logger = LoggerFactory.getLogger(TradeStatusService.class);
 
     // TradeStatus CRUD Interface
-    @Autowired
-    private TradeStatusRepository tradeStatusRepository;
+    private final TradeStatusRepository tradeStatusRepository;
 
     public List<TradeStatus> findAll() {
         logger.info("Retrieving all trade statuses");

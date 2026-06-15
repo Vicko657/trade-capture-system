@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.CurrencyNotFoundException;
 import com.technicalchallenge.model.Currency;
 import com.technicalchallenge.repository.CurrencyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CurrencyService {
     private static final Logger logger = LoggerFactory.getLogger(CurrencyService.class);
 
-    @Autowired
-    private CurrencyRepository currencyRepository;
+    private final CurrencyRepository currencyRepository;
 
     public List<Currency> findAll() {
         logger.info("Retrieving all currencies");

@@ -2,7 +2,9 @@ package com.technicalchallenge.service;
 
 import com.technicalchallenge.model.Desk;
 import com.technicalchallenge.repository.DeskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -12,11 +14,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class DeskService {
     private static final Logger logger = LoggerFactory.getLogger(DeskService.class);
 
-    @Autowired
-    private DeskRepository deskRepository;
+    private final DeskRepository deskRepository;
 
     public List<Desk> getAllDesks() {
         logger.info("Retrieving all desks");

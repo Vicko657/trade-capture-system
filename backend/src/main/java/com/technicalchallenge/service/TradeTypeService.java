@@ -6,9 +6,8 @@ import com.technicalchallenge.model.TradeType;
 import com.technicalchallenge.repository.TradeSubTypeRepository;
 import com.technicalchallenge.repository.TradeTypeRepository;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -22,18 +21,16 @@ import java.util.Optional;
  * types and subtypes of trades.
  */
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TradeTypeService {
 
     private static final Logger logger = LoggerFactory.getLogger(TradeTypeService.class);
 
     // TradeType CRUD Interface
-    @Autowired
-    private TradeTypeRepository tradeTypeRepository;
+    private final TradeTypeRepository tradeTypeRepository;
 
     // TradeSubType CRUD Interface
-    @Autowired
-    private TradeSubTypeRepository tradeSubTypeRepository;
+    private final TradeSubTypeRepository tradeSubTypeRepository;
 
     /**
      * Returns all tradetypes on the system.

@@ -12,7 +12,8 @@ import com.technicalchallenge.validation.ReferenceDataValidator;
 import com.technicalchallenge.validation.TradeValidator;
 import com.technicalchallenge.validation.ValidationResult;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -43,26 +44,18 @@ import java.util.List;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TradeService {
     private static final Logger logger = LoggerFactory.getLogger(TradeService.class);
 
-    @Autowired
-    private TradeRepository tradeRepository;
-    @Autowired
-    private TradeLegService tradeLegService;
-    @Autowired
-    private CashflowService cashflowService;
-    @Autowired
-    private TradeStatusRepository tradeStatusRepository;
-    @Autowired
-    private TradeValidator tradeValidator;
-    @Autowired
-    private ReferenceDataValidator referenceDataValidator;
-    @Autowired
-    private AuthorizationService authorizationService;
-
-    @Autowired
-    private TradeMapper tradeMapper;
+    private final TradeRepository tradeRepository;
+    private final TradeLegService tradeLegService;
+    private final CashflowService cashflowService;
+    private final TradeStatusRepository tradeStatusRepository;
+    private final TradeValidator tradeValidator;
+    private final ReferenceDataValidator referenceDataValidator;
+    private final AuthorizationService authorizationService;
+    private final TradeMapper tradeMapper;
 
     /**
      * Trade: Return all trades that have been created on the system
@@ -295,7 +288,6 @@ public class TradeService {
         // Validates User - Amend Trade
         Long userId = authorizationService.getCurrentUserId();
         authorizationService.validateUserPrivileges(userId, " AMEND_TRADE", tradeDTO);
-
         Trade existingTrade = getTradeById(tradeId);
 
         // Deactivate existing trade

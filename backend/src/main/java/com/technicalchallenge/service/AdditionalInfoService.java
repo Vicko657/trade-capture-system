@@ -3,8 +3,10 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.dto.AdditionalInfoDTO;
 import com.technicalchallenge.model.AdditionalInfo;
 import com.technicalchallenge.repository.AdditionalInfoRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,16 +16,15 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AdditionalInfoService {
 
-    @Autowired
-    private AdditionalInfoRepository additionalInfoRepository;
-
-    @Autowired
-    private ModelMapper modelMapper;
+    private final AdditionalInfoRepository additionalInfoRepository;
+    private final ModelMapper modelMapper;
 
     public List<AdditionalInfoDTO> getAdditionalInfoForEntity(String entityType, Long entityId) {
-        List<AdditionalInfo> additionalInfoList = additionalInfoRepository.findActiveByEntityTypeAndEntityId(entityType, entityId);
+        List<AdditionalInfo> additionalInfoList = additionalInfoRepository.findActiveByEntityTypeAndEntityId(entityType,
+                entityId);
         return additionalInfoList.stream()
                 .map(info -> modelMapper.map(info, AdditionalInfoDTO.class))
                 .collect(Collectors.toList());

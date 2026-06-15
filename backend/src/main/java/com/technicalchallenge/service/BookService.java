@@ -6,7 +6,8 @@ import com.technicalchallenge.mapper.BookMapper;
 import com.technicalchallenge.model.Book;
 import com.technicalchallenge.repository.BookRepository;
 import com.technicalchallenge.repository.CostCenterRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class BookService {
     private static final Logger logger = LoggerFactory.getLogger(BookService.class);
 

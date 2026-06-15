@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.IndexNotFoundException;
 import com.technicalchallenge.model.Index;
 import com.technicalchallenge.repository.IndexRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class IndexService {
     private static final Logger logger = LoggerFactory.getLogger(IndexService.class);
 
-    @Autowired
-    private IndexRepository indexRepository;
+    private final IndexRepository indexRepository;
 
     public List<Index> findAll() {
         logger.info("Retrieving all indexes");

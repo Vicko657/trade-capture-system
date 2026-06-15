@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.LegTypeNotFoundException;
 import com.technicalchallenge.model.LegType;
 import com.technicalchallenge.repository.LegTypeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class LegTypeService {
     private static final Logger logger = LoggerFactory.getLogger(LegTypeService.class);
 
-    @Autowired
-    private LegTypeRepository legTypeRepository;
+    private final LegTypeRepository legTypeRepository;
 
     public List<LegType> findAll() {
         logger.info("Retrieving all leg types");

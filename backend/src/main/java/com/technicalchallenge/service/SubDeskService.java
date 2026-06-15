@@ -4,7 +4,9 @@ import com.technicalchallenge.model.SubDesk;
 import com.technicalchallenge.dto.SubDeskDTO;
 import com.technicalchallenge.repository.DeskRepository;
 import com.technicalchallenge.repository.SubDeskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,14 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class SubDeskService {
     private static final Logger logger = LoggerFactory.getLogger(SubDeskService.class);
 
-    @Autowired
-    private SubDeskRepository subDeskRepository;
-
-    @Autowired
-    private DeskRepository deskRepository;
+    private final SubDeskRepository subDeskRepository;
+    private final DeskRepository deskRepository;
 
     public List<SubDesk> getAllSubDesks() {
         logger.info("Retrieving all subdesks");
@@ -35,9 +35,10 @@ public class SubDeskService {
     public void populateReferenceDataByName(SubDesk subDesk, SubDeskDTO dto) {
         if (dto.getDeskName() != null && !dto.getDeskName().isBlank()) {
             var desk = deskRepository.findAll().stream()
-                .filter(d -> d.getDeskName().equalsIgnoreCase(dto.getDeskName()))
-                .findFirst().orElse(null);
-            if (desk == null) throw new IllegalArgumentException("Desk '" + dto.getDeskName() + "' does not exist");
+                    .filter(d -> d.getDeskName().equalsIgnoreCase(dto.getDeskName()))
+                    .findFirst().orElse(null);
+            if (desk == null)
+                throw new IllegalArgumentException("Desk '" + dto.getDeskName() + "' does not exist");
             subDesk.setDesk(desk);
         }
         // If deskName is null or blank, do not modify the current desk

@@ -3,7 +3,9 @@ package com.technicalchallenge.service;
 import com.technicalchallenge.exceptions.referencedata.PayRecNotFoundException;
 import com.technicalchallenge.model.PayRec;
 import com.technicalchallenge.repository.PayRecRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -13,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class PayRecService {
     private static final Logger logger = LoggerFactory.getLogger(PayRecService.class);
 
-    @Autowired
-    private PayRecRepository payRecRepository;
+    private final PayRecRepository payRecRepository;
 
     public List<PayRec> findAll() {
         logger.info("Retrieving all pay recs");

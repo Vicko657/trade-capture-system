@@ -4,17 +4,18 @@ import com.technicalchallenge.exceptions.referencedata.CounterpartyNotFoundExcep
 import com.technicalchallenge.model.Counterparty;
 import com.technicalchallenge.repository.CounterpartyRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CounterpartyService {
 
-    @Autowired
-    private CounterpartyRepository counterpartyRepository;
+    private final CounterpartyRepository counterpartyRepository;
 
     public List<Counterparty> getAllCounterparties() {
         return counterpartyRepository.findAll();

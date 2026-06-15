@@ -4,7 +4,9 @@ import com.technicalchallenge.model.CostCenter;
 import com.technicalchallenge.dto.CostCenterDTO;
 import com.technicalchallenge.repository.CostCenterRepository;
 import com.technicalchallenge.repository.SubDeskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -14,13 +16,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CostCenterService {
     private static final Logger logger = LoggerFactory.getLogger(CostCenterService.class);
 
-    @Autowired
     private CostCenterRepository costCenterRepository;
-
-    @Autowired
     private SubDeskRepository subDeskRepository;
 
     public List<CostCenter> getAllCostCenters() {
@@ -36,9 +36,10 @@ public class CostCenterService {
     public void populateReferenceDataByName(CostCenter costCenter, CostCenterDTO dto) {
         if (dto.getSubDeskName() != null && !dto.getSubDeskName().isBlank()) {
             var subDesk = subDeskRepository.findAll().stream()
-                .filter(s -> s.getSubdeskName().equalsIgnoreCase(dto.getSubDeskName()))
-                .findFirst().orElse(null);
-            if (subDesk == null) throw new IllegalArgumentException("SubDesk '" + dto.getSubDeskName() + "' does not exist");
+                    .filter(s -> s.getSubdeskName().equalsIgnoreCase(dto.getSubDeskName()))
+                    .findFirst().orElse(null);
+            if (subDesk == null)
+                throw new IllegalArgumentException("SubDesk '" + dto.getSubDeskName() + "' does not exist");
             costCenter.setSubDesk(subDesk);
         }
         // If subDeskName is null or blank, do not modify the current subDesk

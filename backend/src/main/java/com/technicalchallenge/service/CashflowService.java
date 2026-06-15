@@ -11,8 +11,9 @@ import com.technicalchallenge.repository.CashflowRepository;
 import com.technicalchallenge.repository.BusinessDayConventionRepository;
 import com.technicalchallenge.repository.LegTypeRepository;
 import com.technicalchallenge.repository.PayRecRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -26,20 +27,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CashflowService {
     private static final Logger logger = LoggerFactory.getLogger(CashflowService.class);
-    @Autowired
-    private CashflowRepository cashflowRepository;
-    @Autowired
-    private PayRecRepository payRecRepository;
-    @Autowired
-    private LegTypeRepository legTypeRepository;
-    @Autowired
-    private BusinessDayConventionRepository businessDayConventionRepository;
-    @Autowired
-    private BigDecimalPercentages bigDecimalPercentages;
-    @Autowired
-    private CashflowMapper cashflowMapper;
+
+    private final CashflowRepository cashflowRepository;
+    private final PayRecRepository payRecRepository;
+    private final LegTypeRepository legTypeRepository;
+    private final BusinessDayConventionRepository businessDayConventionRepository;
+    private final BigDecimalPercentages bigDecimalPercentages;
+    private final CashflowMapper cashflowMapper;
 
     public List<Cashflow> getAllCashflows() {
         logger.info("Retrieving all cashflows");
