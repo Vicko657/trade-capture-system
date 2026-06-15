@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.technicalchallenge.dto.CashflowDTO;
 import com.technicalchallenge.dto.CashflowGenerationRequest;
+import com.technicalchallenge.dto.CashflowGenerationRequest.TradeLegDTO;
 import com.technicalchallenge.mapper.CashflowMapper;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.model.Cashflow;
@@ -62,6 +63,7 @@ public class CashflowControllerTest {
     private Cashflow cashflow;
     private TradeLeg tradeLeg;
     private PayRec payRec;
+    private TradeLegDTO legDTO1, legDTO2;
 
     @BeforeEach
     void setUp() {
@@ -203,7 +205,7 @@ public class CashflowControllerTest {
     @DisplayName("CreateCashflow: 201 Created")
     void testCreateCashflow() throws Exception {
         // Given
-        when(cashflowService.saveCashflow(any(Cashflow.class))).thenReturn(cashflow);
+        when(cashflowService.saveCashflow(any(CashflowDTO.class))).thenReturn(cashflow);
 
         // When/Then
         mockMvc.perform(post("/api/cashflows")
@@ -214,8 +216,8 @@ public class CashflowControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.paymentValue", is(25000.0)));
 
-        verify(cashflowService).saveCashflow(any(Cashflow.class));
-        verify(cashflowService).populateReferenceDataByName(any(Cashflow.class), any(CashflowDTO.class));
+        verify(cashflowService).saveCashflow(any(CashflowDTO.class));
+
     }
 
     @Test
@@ -231,9 +233,9 @@ public class CashflowControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cashflowDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Cashflow value must be positive"));
+                .andExpect(jsonPath("$.messages", is(List.of("Cashflow value must be positive"))));
 
-        verify(cashflowService, never()).saveCashflow(any(Cashflow.class));
+        verify(cashflowService, never()).saveCashflow(any(CashflowDTO.class));
     }
 
     @Test
@@ -249,9 +251,9 @@ public class CashflowControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cashflowDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Value date is required"));
+                .andExpect(jsonPath("$.messages", is(List.of("Value date is required"))));
 
-        verify(cashflowService, never()).saveCashflow(any(Cashflow.class));
+        verify(cashflowService, never()).saveCashflow(any(CashflowDTO.class));
     }
 
     @Test
@@ -275,29 +277,43 @@ public class CashflowControllerTest {
     @DisplayName("GenerateCashflows: 200 OK Response")
     void testGenerateCashflows() throws Exception {
         // Given
+        legDTO1 = new TradeLegDTO();
+        legDTO1.setNotional(BigDecimal.valueOf(1000000.0));
+        legDTO1.setLegType("Fixed");
+        legDTO1.setRate(0.05);
+        legDTO1.setCalculationPeriodSchedule("3M");
+        legDTO1.setPayReceiveFlag("Pay");
+        legDTO1.setPaymentBusinessDayConvention("Following");
+        legDTO1.setIndex("LIBOR");
+
+        legDTO2 = new TradeLegDTO();
+        legDTO2.setNotional(BigDecimal.valueOf(1000000.0));
+        legDTO2.setLegType("Floating");
+        legDTO2.setRate(0.03);
+        legDTO2.setCalculationPeriodSchedule("3M");
+        legDTO2.setPayReceiveFlag("Recieve");
+        legDTO2.setPaymentBusinessDayConvention("Following");
+        legDTO2.setIndex("LIBOR");
+
         CashflowGenerationRequest request = new CashflowGenerationRequest();
         request.setTradeStartDate(LocalDate.now());
         request.setTradeMaturityDate(LocalDate.now().plusYears(2));
-
-        CashflowGenerationRequest.TradeLegDTO legDTO = new CashflowGenerationRequest.TradeLegDTO();
-        legDTO.setNotional(BigDecimal.valueOf(1000000.0));
-        legDTO.setLegType("Fixed");
-        legDTO.setRate(0.05);
-        legDTO.setCalculationPeriodSchedule("3M");
-
-        request.setLegs(Arrays.asList(legDTO));
+        request.setLegs(Arrays.asList(legDTO1, legDTO2));
 
         List<CashflowDTO> generatedCashflows = Arrays.asList(cashflowDTO);
 
+        when(cashflowService.generateCashflowsDTOs(request)).thenReturn(generatedCashflows);
+
         // Mock the controller's behavior for generating cashflows
-        // This is a simplification since the actual implementation is in the controller
 
         // When/Then
         mockMvc.perform(post("/api/cashflows/generate")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+
     }
 
     @Test
