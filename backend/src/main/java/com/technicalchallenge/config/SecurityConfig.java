@@ -35,6 +35,10 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(mvc.pattern("/api/login")).permitAll()
+                        .requestMatchers(mvc.pattern("/swagger-ui/**"), mvc.pattern("/v3/api-docs/**"),
+                                mvc.pattern("/swagger-resources/**"), mvc.pattern("/webjars/**"),
+                                mvc.pattern("/actuator/health"))
+                        .permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(withDefaults());
 
