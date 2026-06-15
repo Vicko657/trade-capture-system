@@ -7,12 +7,12 @@ import com.technicalchallenge.service.CostCenterService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -22,14 +22,13 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/costCenters")
 @Validated
+@RequiredArgsConstructor
 @Tag(name = "CostCenter", description = "Organization unit that manages and tracks costs seperately")
 public class CostCenterController {
     private static final Logger logger = LoggerFactory.getLogger(CostCenterController.class);
 
-    @Autowired
-    private CostCenterService costCenterService;
-    @Autowired
-    private CostCenterMapper costCenterMapper;
+    private final CostCenterService costCenterService;
+    private final CostCenterMapper costCenterMapper;
 
     @GetMapping
     public List<CostCenterDTO> getAllCostCenters() {

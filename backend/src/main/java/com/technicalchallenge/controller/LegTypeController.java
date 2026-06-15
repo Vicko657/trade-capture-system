@@ -6,8 +6,8 @@ import com.technicalchallenge.model.LegType;
 import com.technicalchallenge.service.LegTypeService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/legTypes")
 @Tag(name = "LegType", description = "Classification of a trade leg based on how its cashflows behave")
+@RequiredArgsConstructor
 public class LegTypeController {
     private static final Logger logger = LoggerFactory.getLogger(LegTypeController.class);
 
-    @Autowired
-    private LegTypeService legTypeService;
-
-    @Autowired
-    private LegTypeMapper legTypeMapper;
+    private final LegTypeService legTypeService;
+    private final LegTypeMapper legTypeMapper;
 
     @GetMapping
     public List<LegTypeDTO> getAll() {

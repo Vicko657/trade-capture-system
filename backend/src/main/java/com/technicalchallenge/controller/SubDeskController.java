@@ -7,12 +7,12 @@ import com.technicalchallenge.service.SubDeskService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -23,13 +23,12 @@ import org.slf4j.LoggerFactory;
 @RequestMapping("/api/subdesks")
 @Validated
 @Tag(name = "SubDesk", description = "Smaller specialized unit within a larger trading desk")
+@RequiredArgsConstructor
 public class SubDeskController {
     private static final Logger logger = LoggerFactory.getLogger(SubDeskController.class);
 
-    @Autowired
-    private SubDeskService subDeskService;
-    @Autowired
-    private SubDeskMapper subDeskMapper;
+    private final SubDeskService subDeskService;
+    private final SubDeskMapper subDeskMapper;
 
     @GetMapping
     public List<SubDeskDTO> getAllSubDesks() {

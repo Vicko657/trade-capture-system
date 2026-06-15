@@ -6,8 +6,8 @@ import com.technicalchallenge.model.Index;
 import com.technicalchallenge.service.IndexService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/indices")
 @Tag(name = "Index", description = "Benchmark measure that tracks value or the performance of a market")
+@RequiredArgsConstructor
 public class IndexController {
     private static final Logger logger = LoggerFactory.getLogger(IndexController.class);
 
-    @Autowired
-    private IndexService indexService;
-
-    @Autowired
-    private IndexMapper indexMapper;
+    private final IndexService indexService;
+    private final IndexMapper indexMapper;
 
     @GetMapping
     public List<IndexDTO> getAll() {

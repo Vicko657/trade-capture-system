@@ -6,8 +6,8 @@ import com.technicalchallenge.model.TradeType;
 import com.technicalchallenge.service.TradeTypeService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/tradeTypes")
 @Tag(name = "TradeType", description = "Broad category of a financial transaction")
+@RequiredArgsConstructor
 public class TradeTypeController {
     private static final Logger logger = LoggerFactory.getLogger(TradeTypeController.class);
 
-    @Autowired
-    private TradeTypeService tradeTypeService;
-
-    @Autowired
-    private TradeTypeMapper tradeTypeMapper;
+    private final TradeTypeService tradeTypeService;
+    private final TradeTypeMapper tradeTypeMapper;
 
     @GetMapping
     public List<TradeTypeDTO> getAll() {

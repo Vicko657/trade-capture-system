@@ -5,7 +5,6 @@ import com.technicalchallenge.mapper.TradeMapper;
 import com.technicalchallenge.model.Trade;
 import com.technicalchallenge.service.TradeService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +20,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -38,13 +39,12 @@ import org.slf4j.LoggerFactory;
 @RequestMapping("/api/trades")
 @Validated
 @Tag(name = "Trades", description = "Trade management operations including booking, searching, and lifecycle management")
+@RequiredArgsConstructor
 public class TradeController {
         private static final Logger logger = LoggerFactory.getLogger(TradeController.class);
 
-        @Autowired
-        private TradeService tradeService;
-        @Autowired
-        private TradeMapper tradeMapper;
+        private final TradeService tradeService;
+        private final TradeMapper tradeMapper;
 
         @GetMapping
         @PreAuthorize("hasAuthority('READ_TRADE')")

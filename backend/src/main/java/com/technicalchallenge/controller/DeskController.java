@@ -7,12 +7,12 @@ import com.technicalchallenge.service.DeskService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -23,13 +23,12 @@ import org.slf4j.LoggerFactory;
 @RequestMapping("/api/desks")
 @Validated
 @Tag(name = "Desks", description = "Teams organized by product or market that manage trades")
+@RequiredArgsConstructor
 public class DeskController {
     private static final Logger logger = LoggerFactory.getLogger(DeskController.class);
 
-    @Autowired
-    private DeskService deskService;
-    @Autowired
-    private DeskMapper deskMapper;
+    private final DeskService deskService;
+    private final DeskMapper deskMapper;
 
     @GetMapping
     public List<DeskDTO> getAllDesks() {

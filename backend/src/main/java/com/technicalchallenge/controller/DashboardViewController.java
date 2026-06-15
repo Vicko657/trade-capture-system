@@ -2,7 +2,6 @@ package com.technicalchallenge.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Rest Controller for viewing personal dashboards and blotter system
@@ -33,11 +33,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/trades/dashboard")
 @Tag(name = "Dashboard Views", description = "Trader dashboard and blotter system including personal trades, trades summary, daily summary and book level activity")
+@RequiredArgsConstructor
 public class DashboardViewController {
         private static final Logger logger = LoggerFactory.getLogger(DashboardViewController.class);
 
-        @Autowired
-        private DashboardViewService dashboardViewService;
+        private final DashboardViewService dashboardViewService;
 
         @Operation(summary = "Get the trader's personal trades view", description = "Retrieves all the user's trades.")
         @ApiResponses(value = {

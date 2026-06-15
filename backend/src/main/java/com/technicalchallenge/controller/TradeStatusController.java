@@ -6,8 +6,8 @@ import com.technicalchallenge.model.TradeStatus;
 import com.technicalchallenge.service.TradeStatusService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/tradeStatus")
 @Tag(name = "TradeStatus", description = "Current state or life style stage of a trade")
+@RequiredArgsConstructor
 public class TradeStatusController {
     private static final Logger logger = LoggerFactory.getLogger(TradeStatusController.class);
 
-    @Autowired
-    private TradeStatusService tradeStatusService;
-
-    @Autowired
-    private TradeStatusMapper tradeStatusMapper;
+    private final TradeStatusService tradeStatusService;
+    private final TradeStatusMapper tradeStatusMapper;
 
     @GetMapping
     public List<TradeStatusDTO> getAll() {

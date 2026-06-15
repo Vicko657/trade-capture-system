@@ -5,12 +5,12 @@ import com.technicalchallenge.service.BookService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -20,12 +20,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/books")
 @Validated
+@RequiredArgsConstructor
 @Tag(name = "Books", description = "Book management for trades")
 public class BookController {
     private static final Logger logger = LoggerFactory.getLogger(BookController.class);
 
-    @Autowired
-    private BookService bookService;
+    private final BookService bookService;
 
     @GetMapping
     public ResponseEntity<List<BookDTO>> getAllBooks() {

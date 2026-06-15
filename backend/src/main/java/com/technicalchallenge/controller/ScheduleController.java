@@ -6,8 +6,8 @@ import com.technicalchallenge.model.Schedule;
 import com.technicalchallenge.service.ScheduleService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/schedules")
 @Tag(name = "Schedule", description = "Structured set of dates and periods that determine when events like payments occur")
+@RequiredArgsConstructor
 public class ScheduleController {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleController.class);
 
-    @Autowired
-    private ScheduleService scheduleService;
-
-    @Autowired
-    private ScheduleMapper scheduleMapper;
+    private final ScheduleService scheduleService;
+    private final ScheduleMapper scheduleMapper;
 
     @GetMapping
     public List<ScheduleDTO> getAll() {

@@ -5,8 +5,8 @@ import com.technicalchallenge.mapper.UserProfileMapper;
 import com.technicalchallenge.service.UserProfileService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +16,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/userProfiles")
 @Tag(name = "UserProfile", description = "A list of roles assigned to the user")
+@RequiredArgsConstructor
 public class UserProfileController {
-    @Autowired
-    private UserProfileService userProfileService;
-    @Autowired
-    private UserProfileMapper userProfileMapper;
+
+    private final UserProfileService userProfileService;
+    private final UserProfileMapper userProfileMapper;
 
     @GetMapping
     @PreAuthorize("hasAuthority('READ_USER')")

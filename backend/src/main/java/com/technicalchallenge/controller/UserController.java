@@ -4,7 +4,6 @@ import com.technicalchallenge.dto.UserDTO;
 import com.technicalchallenge.mapper.ApplicationUserMapper;
 import com.technicalchallenge.model.ApplicationUser;
 import com.technicalchallenge.service.ApplicationUserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
 import java.util.List;
@@ -34,14 +34,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Users", description = "User management and authentication operations")
+@RequiredArgsConstructor
 public class UserController {
         private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-        @Autowired
-        private ApplicationUserService applicationUserService;
-
-        @Autowired
-        private ApplicationUserMapper applicationUserMapper;
+        private final ApplicationUserService applicationUserService;
+        private final ApplicationUserMapper applicationUserMapper;
 
         @GetMapping
         @PreAuthorize("hasAuthority('READ_USER')")

@@ -4,7 +4,6 @@ import com.technicalchallenge.dto.CashflowDTO;
 import com.technicalchallenge.dto.CashflowGenerationRequest;
 import com.technicalchallenge.mapper.CashflowMapper;
 import com.technicalchallenge.service.CashflowService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,12 +18,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
-
-import java.math.BigDecimal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,13 +29,12 @@ import org.slf4j.LoggerFactory;
 @RequestMapping("/api/cashflows")
 @Validated
 @Tag(name = "Cashflows", description = "Cashflow generation and management for trades")
+@RequiredArgsConstructor
 public class CashflowController {
     private static final Logger logger = LoggerFactory.getLogger(CashflowController.class);
 
-    @Autowired
-    private CashflowService cashflowService;
-    @Autowired
-    private CashflowMapper cashflowMapper;
+    private final CashflowService cashflowService;
+    private final CashflowMapper cashflowMapper;
 
     @GetMapping
     @Operation(summary = "Get all cashflows", description = "Retrieves a list of all generated cashflows in the system with payment dates and amounts")

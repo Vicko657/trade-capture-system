@@ -4,8 +4,8 @@ import com.technicalchallenge.model.BusinessDayConvention;
 import com.technicalchallenge.service.BusinessDayConventionService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,11 +17,11 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/businessDayConventions")
 @Tag(name = "BusinessDayConventionController", description = "Adjusts scheduled dates to the correct business day for tradelegs")
+@RequiredArgsConstructor
 public class BusinessDayConventionController {
     private static final Logger logger = LoggerFactory.getLogger(BusinessDayConventionController.class);
 
-    @Autowired
-    private BusinessDayConventionService businessDayConventionService;
+    private final BusinessDayConventionService businessDayConventionService;
 
     @GetMapping
     public List<BusinessDayConvention> getAll() {

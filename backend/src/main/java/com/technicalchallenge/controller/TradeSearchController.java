@@ -2,7 +2,6 @@ package com.technicalchallenge.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +26,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Rest Controller for managing the trade searches.
@@ -37,15 +37,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/trades")
 @Validated
 @Tag(name = "Trade Searches", description = "Trade Search management operations searching, pagination and filtering")
+@RequiredArgsConstructor
 public class TradeSearchController {
 
-        // TradeSearchService layer
-        @Autowired
-        private TradeSearchService tradeSearchService;
-
-        // TradeMapper layer
-        @Autowired
-        private TradeMapper tradeMapper;
+        private final TradeSearchService tradeSearchService;
+        private final TradeMapper tradeMapper;
 
         @Operation(summary = "Get all trades by search criteria", description = "Retrieves Trades by counterparty, book, trader, status, date ranges and returns comprehensive trade information including legs and cashflows.")
         @ApiResponses(value = {

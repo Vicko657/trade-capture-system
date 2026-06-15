@@ -6,8 +6,8 @@ import com.technicalchallenge.model.HolidayCalendar;
 import com.technicalchallenge.service.HolidayCalendarService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/holidayCalendars")
 @Tag(name = "Holiday Calender", description = "List of non working days to validate business days for trading and settlement")
+@RequiredArgsConstructor
 public class HolidayCalendarController {
     private static final Logger logger = LoggerFactory.getLogger(HolidayCalendarController.class);
 
-    @Autowired
-    private HolidayCalendarService holidayCalendarService;
-
-    @Autowired
-    private HolidayCalendarMapper holidayCalendarMapper;
+    private final HolidayCalendarService holidayCalendarService;
+    private final HolidayCalendarMapper holidayCalendarMapper;
 
     @GetMapping
     public List<HolidayCalendarDTO> getAll() {

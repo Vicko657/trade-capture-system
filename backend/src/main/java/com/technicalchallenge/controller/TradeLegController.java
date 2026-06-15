@@ -6,13 +6,13 @@ import com.technicalchallenge.service.TradeLegService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -23,13 +23,12 @@ import org.slf4j.LoggerFactory;
 @RequestMapping("/api/tradeLegs")
 @Validated
 @Tag(name = "TradeLeg", description = "Component or part of a larger trade, which represnts one side or segment of a muilt part transcation")
+@RequiredArgsConstructor
 public class TradeLegController {
     private static final Logger logger = LoggerFactory.getLogger(TradeLegController.class);
 
-    @Autowired
-    private TradeLegService tradeLegService;
-    @Autowired
-    private TradeLegMapper tradeLegMapper;
+    private final TradeLegService tradeLegService;
+    private final TradeLegMapper tradeLegMapper;
 
     @GetMapping
     @PreAuthorize("hasAuthority('READ_TRADE')")
