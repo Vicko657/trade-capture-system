@@ -60,7 +60,8 @@ INSERT INTO trade_leg (leg_id, notional, rate, trade_id, currency_id, leg_rate_t
                        active, created_date, deactivated_date) VALUES
   (1000, 1000000.00, 0.05, 1000, 1000, 1000, null, 1000, 1001, 1000, 1000, 1000, true, '2024-06-01T10:30:00', null),
   (1001, 1000000.00, 0.0, 1000, 1000, 1001, 1000, 1000, 1001, 1000, 1000, 1001, true, '2024-06-01T10:30:00', null),
-  (1002, 5000000.00, 0.045, 1001, 1001, 1000, null, 1001, 1000, 1001, 1001, 1000, true, '2024-06-02T11:15:00', null);
+  (1002, 5000000.00, 0.045, 1001, 1001, 1000, null, 1001, 1000, 1001, 1001, 1000, true, '2024-06-02T11:15:00', null),
+  (1003, 5000000.00, 0.0, 1001, 1000, 1001, 1000, 1000, 1001, 1000, 1000, 1001, true, '2024-06-02T11:15:00', null);
 
 -- Sample Cashflows
 INSERT INTO cashflow (id, payment_value, value_date, rate, leg_id, pay_rec_id, payment_type_id, payment_business_day_convention_id,
@@ -68,3 +69,15 @@ INSERT INTO cashflow (id, payment_value, value_date, rate, leg_id, pay_rec_id, p
   (1000, 12500.00, '2024-09-01', 0.05, 1000, 1000, 1000, 1000, true, '2024-06-01T10:30:00', '2024-06-01', null),
   (1001, 12500.00, '2024-12-01', 0.05, 1000, 1000, 1000, 1000, true, '2024-06-01T10:30:00', '2024-06-01', null),
   (1002, 225000.00, '2024-06-04', 0.045, 1002, 1000, 1000, 1001, true, '2024-06-02T11:15:00', '2024-06-02', null);
+
+
+INSERT INTO trade (id, trade_id, version, book_id, counterparty_id, trader_user_id, inputter_user_id, trade_type_id, trade_sub_type_id, trade_status_id,
+                   trade_date, trade_start_date, trade_maturity_date, trade_execution_date, uti_code, last_touch_timestamp, validity_start_date, validity_end_date,
+                   active, created_date, deactivated_date) VALUES
+   (1002, 100003, 1, 1000, 1001, 1003, 1005, 1000, 1000, 1004, '2025-11-25', '2025-11-27', '2027-11-27', '2025-11-25', 'UTI-003', '2025-11-25T11:15:00', '2025-11-25', null, true, '2025-11-25T11:15:00', null);
+
+INSERT INTO trade_leg (leg_id, notional, rate, trade_id, currency_id, leg_rate_type_id, index_id, holiday_calendar_id,
+                       calculation_period_schedule_id, payment_business_day_convention_id, fixing_business_day_convention_id, pay_rec_id,
+                       active, created_date, deactivated_date) VALUES
+  (1004, 1000000.00, 0.05, 1002, 1000, 1000, null, 1000, 1001, 1000, 1000, 1000, true, '2025-11-24T11:15:00', null),
+  (1005, 1000000.00, 0.0, 1002, 1000, 1001, 1000, 1000, 1001, 1000, 1000, 1001, true, '2025-11-24T11:15:00', null);
